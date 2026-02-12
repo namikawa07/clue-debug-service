@@ -29,13 +29,85 @@ class TaskService:
         result = await self.db.execute(
             select(Task)
             .options(
-                selectinload(Task.epic),
+                selectinload(Task.epic).selectinload(Epic.project),
                 selectinload(Task.assigned_user),
                 selectinload(Task.comments)
             )
             .where(Task.id == task_id)
         )
         return result.scalar_one_or_none()
+    
+    # ... (get_by_project, get_by_epic logic remains same) ...
+
+    async def create(
+        self,
+        project_id: str,
+        data: TaskCreate,
+        user_id: str
+    ) -> Task:
+        """Create a new task"""
+        # If no epic_id provided, get or create default epic for project
+        epic_id = data.epic_id
+        if not epic_id:
+            # Get default epic or first epic in project
+            result = await self.db.execute(
+                select(Epic).where(Epic.project_id == project_id).limit(1)
+            )
+            epic = result.scalar_one_or_none()
+            
+            if not epic:
+                # Create a default "Backlog" epic if none exists
+                from app.utils.id_generator import generate_epic_id
+                epic = Epic(
+                    id=generate_epic_id(),
+                    project_id=project_id,
+                    name="Backlog",
+                    description="Default backlog for project tasks",
+                    status="todo",
+                    created_by=user_id
+                )
+                self.db.add(epic)
+                await self.db.commit()
+                await self.db.refresh(epic)
+                
+            epic_id = epic.id
+        
+        # Get next position
+        position = await self._get_next_position(epic_id)
+        
+        task = Task(
+            epic_id=epic_id,
+            title=data.title,
+            description=data.description,
+            task_type=data.task_type,
+            status=data.status,
+            priority=data.priority,
+            assigned_to=data.assigned_to,
+            created_by=user_id,
+            estimated_hours=data.estimated_hours,
+            due_date=data.due_date,
+            dependencies=data.dependencies or [],
+            tags=data.tags or [],
+            ai_confidence=data.ai_confidence,
+            additional_data=data.additional_data or {},
+            position=position
+        )
+        
+        self.db.add(task)
+        await self.db.commit()
+        await self.db.refresh(task)
+        
+        # Log activity
+        await self.activity_service.log(
+            user_id=user_id,
+            action=ActionType.CREATED,
+            entity_type=EntityType.TASK,
+            entity_id=task.id,
+            changes={"title": task.title, "project_id": str(project_id)}
+        )
+        
+        # Return fully loaded task to avoid serialization errors
+        return await self.get_by_id(task.id)
     
     async def get_by_project(
         self,
@@ -48,12 +120,19 @@ class TaskService:
         limit: int = 100
     ) -> List[Task]:
         """Get all tasks in a project with filtering"""
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"TaskService: Fetching tasks for project {project_id}")
+
         # First get all epics in the project
         epic_query = select(Epic.id).where(Epic.project_id == project_id)
         epic_result = await self.db.execute(epic_query)
         epic_ids = [row[0] for row in epic_result.fetchall()]
         
+        logger.info(f"TaskService: Found epics for project {project_id}: {epic_ids}")
+
         if not epic_ids:
+            logger.warning(f"TaskService: No epics found for project {project_id}. Tasks are linked via Epics, so no tasks can be retrieved.")
             return []
         
         # Build task query with filters
@@ -83,9 +162,56 @@ class TaskService:
         """Get all tasks in an epic"""
         result = await self.db.execute(
             select(Task)
+            .options(
+                selectinload(Task.epic).selectinload(Epic.project),
+                selectinload(Task.assigned_user)
+            )
             .where(Task.epic_id == epic_id)
             .order_by(Task.position.asc().nullslast(), Task.created_at.desc())
         )
+        return list(result.scalars().all())
+
+    async def get_by_workspace(
+        self,
+        workspace_id: str,
+        status: Optional[TaskStatus] = None,
+        priority: Optional[Priority] = None,
+        assigned_to: Optional[str] = None,
+        search: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[Task]:
+        """Get all tasks in a workspace (across all projects)"""
+        # Join Task -> Epic -> Project
+        query = (
+            select(Task)
+            .join(Epic, Task.epic_id == Epic.id)
+            .join(Project, Epic.project_id == Project.id)
+            .options(
+                selectinload(Task.epic).selectinload(Epic.project),
+                selectinload(Task.assigned_user)
+            )
+            .where(Project.workspace_id == workspace_id)
+        )
+        
+        if status:
+            query = query.where(Task.status == status)
+        if priority:
+            query = query.where(Task.priority == priority)
+        if assigned_to:
+            query = query.where(Task.assigned_to == assigned_to)
+        if search:
+            query = query.where(
+                or_(
+                    Task.title.ilike(f"%{search}%"),
+                    Task.description.ilike(f"%{search}%")
+                )
+            )
+            
+        query = query.order_by(Task.position.asc().nullslast(), Task.created_at.desc())
+        query = query.offset(skip).limit(limit)
+        
+        result = await self.db.execute(query)
         return list(result.scalars().all())
     
     async def create(

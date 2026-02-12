@@ -6,11 +6,14 @@ from app.database import get_db
 # ... imports ...
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.models.enums import ActionType, EntityType
+from app.models.user import User
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse, WorkspaceCreateRequest
 from app.services.workspace_service import WorkspaceService
 from app.services.activity_service import ActivityService
 from app.services.member_service import MemberService
+from app.services.task_service import TaskService
+from app.models.enums import ActionType, EntityType, TaskStatus, Priority
+from app.schemas.task import TaskResponse
 
 router = APIRouter()
 
@@ -159,6 +162,39 @@ async def get_workspace_analytics(
         
     analytics = await service.get_analytics(workspace_id, current_user.id)
     return {"data": analytics}
+
+
+@router.get("/workspaces/{workspace_id}/tasks", response_model=List[TaskResponse])
+async def list_workspace_tasks(
+    workspace_id: str,
+    status: Optional[TaskStatus] = Query(None, description="Filter by status"),
+    priority: Optional[Priority] = Query(None, description="Filter by priority"),
+    assigned_to: Optional[str] = Query(None, description="Filter by assignee"),
+    search: Optional[str] = Query(None, description="Search in title/description"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List all tasks in a workspace with advanced filtering"""
+    member_service = MemberService(db)
+    
+    # Verify membership
+    membership = await member_service.get_membership(current_user.id, workspace_id)
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+
+    task_service = TaskService(db)
+    tasks = await task_service.get_by_workspace(
+        workspace_id=workspace_id,
+        status=status,
+        priority=priority,
+        assigned_to=assigned_to,
+        search=search,
+        skip=skip,
+        limit=limit
+    )
+    return tasks
 
 
 @router.get("/workspaces/{workspace_id}/info", response_model=WorkspaceResponse)

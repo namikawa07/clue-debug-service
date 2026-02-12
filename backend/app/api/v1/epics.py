@@ -15,7 +15,7 @@ from app.services.epic_service import EpicService
 router = APIRouter()
 
 
-@router.get("/projects/{project_id}", response_model=List[EpicResponse])
+@router.get("/projects/{project_id}/epics", response_model=List[EpicResponse])
 async def list_project_epics(
     project_id: str,
     db: AsyncSession = Depends(get_db),

@@ -20,6 +20,7 @@ export const useGetProject = ({
 
             // Map to frontend format
             const data: Project = {
+                id: project.id,
                 $id: project.id,
                 $createdAt: project.created_at,
                 $updatedAt: project.updated_at,
