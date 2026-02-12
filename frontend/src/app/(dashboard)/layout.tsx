@@ -15,22 +15,22 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-neutral-50">
       <OnboardingGuard />
       <CreateWorkspaceModal />
       <CreateProjectModel />
       <CreateTaskModal />
       <EditTaskModal />
       <RealtimeWrapper>
-        <div className="flex w-full h-full">
-          <div className="fixed left-0 top-0 hidden lg:block lg:w-[364px] h-full overflow-y-auto">
+        <div className="flex w-full h-screen">
+          {/* Sidebar - w-56 (224px) to match snippet */}
+          <div className="fixed left-0 top-0 hidden lg:block lg:w-56 h-full overflow-y-auto border-r border-gray-200 bg-white z-30">
             <Sidebar />
           </div>
-          <div className="lg:pl-[364px] w-full">
-            <div className="mx-auto max-w-screen-2xl h-full">
-              <Navbar />
-              <main className="h-full py-8 px-6 flex flex-col">{children}</main>
-            </div>
+          {/* Main content area - pl-56 */}
+          <div className="lg:pl-56 w-full flex flex-col h-screen">
+            <Navbar />
+            <main className="flex-1 overflow-y-auto py-6 px-6">{children}</main>
           </div>
         </div>
       </RealtimeWrapper>
@@ -39,4 +39,3 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 };
 
 export default DashboardLayout;
-

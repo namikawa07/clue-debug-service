@@ -40,18 +40,17 @@ export const ProjectIdClient = () => {
     <div className="flex flex-col gap-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-x-2">
-          This one here
           <ProjectAvatar
-            name={project?.name}
-            image={project?.imageUrl}
+            name={project.name}
+            image={project.imageUrl}
             className="size-8"
           />
-          <p className="text-lg font-semibold">{project?.name}</p>
+          <p className="text-lg font-semibold">{project.name}</p>
         </div>
         <div>
           <Button variant="secondary" size="sm" asChild>
             <Link
-              href={`/workspaces/${project.workspaceId}/projects/${project.$id}/settings`}
+              href={`/workspaces/${project.workspaceId}/projects/${project.id}/settings`}
             >
               <PencilIcon className="size-4 mr-2" />
               Edit Project

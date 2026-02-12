@@ -36,17 +36,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TaskStatus } from "../types";
 import { createTaskSchema } from "../schemas";
 import { useCreateTask } from "../api/use-create-task";
+import { useGetEpics } from "@/features/epics/api/use-get-epics";
 
 interface CreateTaskFormProps {
   onCancel?: () => void;
   projectOptions: { id: string, name: string, imageUrl: string }[];
   memberOptions: { id: string, name: string; avatarColor?: { bg: string; text: string } }[];
+  initialProjectId?: string;
 }
 
 export const CreateTaskForm = ({
   onCancel,
   projectOptions,
   memberOptions,
+  initialProjectId,
 }: CreateTaskFormProps) => {
   const workspaceId = useWorkspaceId();
   const { mutate, isPending } = useCreateTask();
@@ -58,7 +61,8 @@ export const CreateTaskForm = ({
       workspaceId,
       name: "",
       status: TaskStatus.TODO,
-      projectId: "",
+      projectId: initialProjectId || "",
+      epicId: "",
       assigneeId: "",
       description: "",
       startTime: "",
@@ -67,6 +71,9 @@ export const CreateTaskForm = ({
       isUrgent: false,
     },
   });
+
+  const projectId = form.watch("projectId");
+  const { data: epics, isLoading: isLoadingEpics } = useGetEpics({ projectId });
 
   const onSubmit = (values: z.infer<typeof createTaskSchema>) => {
 
@@ -215,6 +222,36 @@ export const CreateTaskForm = ({
                               />
                               {project.name}
                             </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="epicId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Epic
+                    </FormLabel>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isLoadingEpics || !projectId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select epic (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <FormMessage />
+                      <SelectContent>
+                        {epics && epics.map((epic: any) => (
+                          <SelectItem key={epic.id} value={epic.id}>
+                            {epic.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
