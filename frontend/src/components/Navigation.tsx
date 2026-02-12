@@ -24,7 +24,7 @@ const routes = [
     },
     {
         label: "Projects",
-        href: "/projects-list",
+        href: "/projects",
         icon: SettingsIcon,
         activeIcon: SettingsIcon,
     },
