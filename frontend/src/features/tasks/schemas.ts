@@ -21,6 +21,15 @@ export const createTaskSchema = z.object({
     priority: z.enum(["critical", "high", "medium", "low"]).optional(),
     isUrgent: z.boolean().optional(),
     teamId: z.string().trim().optional(),
+    epicId: z.string().trim().optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial();
+
+export const createEpicSchema = z.object({
+    title: z.string().trim().min(1, "Required"),
+    description: z.string().optional(),
+    status: z.enum(["todo", "in_progress", "done"]).default("todo"),
+    priority: z.enum(["critical", "high", "medium", "low"]).default("medium"),
+    projectId: z.string().trim().min(1, "Required"),
+});

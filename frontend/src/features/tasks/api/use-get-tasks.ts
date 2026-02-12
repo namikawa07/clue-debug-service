@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { Task, TaskStatus } from "../types";
 
 // Helper to check if a valid status enum
@@ -27,69 +27,45 @@ export const useGetTasks = ({
     const query = useQuery({
         queryKey: ["tasks", workspaceId, projectId, status, search, assigneeId, dueDate],
         queryFn: async () => {
-            let query = supabase
-                .from('tasks')
-                .select(`
-                    *,
-                    project:projects(name),
-                    assigned_user:users(name, avatar_url)
-                `);
+            // Determine endpoint based on scope
+            const endpoint = projectId
+                ? `/projects/${projectId}/tasks`
+                : `/workspaces/${workspaceId}/tasks`;
 
-            // Always filter by workspace
-            if (projectId) {
-                query = query.eq('project_id', projectId);
-            } else {
-                // If no project, get all tasks in workspace via projects
-                const { data: projects } = await supabase
-                    .from('projects')
-                    .select('id')
-                    .eq('workspace_id', workspaceId);
+            // Prepare params
+            const params: Record<string, any> = {};
+            if (status) params.status = status;
+            if (assigneeId) params.assigned_to = assigneeId;
+            if (search) params.search = search;
+            // Note: dueDate filtering is not yet supported by backend API
 
-                if (projects && projects.length > 0) {
-                    const projectIds = projects.map(p => p.id);
-                    query = query.in('project_id', projectIds);
-                } else {
-                    return { documents: [], total: 0 };
-                }
-            }
+            const tasks = await api.get<any[]>(endpoint, { params });
 
-            // Apply filters
-            if (status) query = query.eq('status', status);
-            if (assigneeId) query = query.eq('assigned_to', assigneeId);
-            if (search) query = query.ilike('title', `%${search}%`);
-            if (dueDate) query = query.gte('due_date', dueDate);
+            const documents = tasks.map((response: any) => ({
+                id: response.id,
+                $id: response.id,
+                created_at: response.created_at,
+                updated_at: response.updated_at,
+                $createdAt: response.created_at,
+                $updatedAt: response.updated_at,
 
-            const { data: tasks, error } = await query.order('position', { ascending: true });
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            const documents = tasks.map((task: any) => ({
-                id: task.id,
-                $id: task.id,
-                created_at: task.created_at,
-                updated_at: task.updated_at,
-                $createdAt: task.created_at,
-                $updatedAt: task.updated_at,
-
-                name: task.title,
-                status: isValidStatus(task.status) ? task.status : TaskStatus.TODO,
+                name: response.title,
+                status: isValidStatus(response.status) ? response.status : TaskStatus.TODO,
                 workspaceId: workspaceId,
-                projectId: task.project_id,
-                assigneeId: task.assigned_to || "",
-                position: task.position || 0,
-                dueDate: task.due_date || "",
-                description: task.description,
-                priority: task.priority,
+                projectId: response.project?.id || response.epic_id || "",
+                assigneeId: response.assigned_to || "",
+                position: response.position || 0,
+                dueDate: response.due_date || "",
+                description: response.description,
+                priority: response.priority,
 
-                project: task.project ? {
-                    name: task.project.name,
-                    imageUrl: task.project.image_url || task.project.imageUrl || ""
+                project: response.project ? {
+                    name: response.project.name,
+                    imageUrl: ""
                 } : { name: "Unknown Project", imageUrl: "" },
-                assignee: task.assigned_user ? {
-                    name: task.assigned_user.name,
-                    avatarColor: task.assigned_user.avatar_color || { bg: "bg-gray-100", text: "text-gray-700" }
+                assignee: response.assignee ? {
+                    name: response.assignee.name,
+                    avatarColor: { bg: "bg-gray-100", text: "text-gray-700" }
                 } : { name: "Unassigned" }
             })) as Task[];
 

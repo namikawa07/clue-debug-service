@@ -43,3 +43,12 @@ export type Task = {
     $createdAt: string;
     $updatedAt: string;
 };
+
+export type Epic = {
+    id: string;
+    name: string;
+    status: string;
+    project_id: string;
+    created_at?: string;
+    updated_at?: string;
+};

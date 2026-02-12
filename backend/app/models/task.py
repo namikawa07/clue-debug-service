@@ -40,3 +40,11 @@ class Task(Base):
     comments = relationship("Comment", back_populates="task")
     sprint_tasks = relationship("SprintTask", back_populates="task")
     time_logs = relationship("TimeEntry", back_populates="task")
+
+    @property
+    def project(self):
+        return self.epic.project if self.epic else None
+
+    @property
+    def assignee(self):
+        return self.assigned_user

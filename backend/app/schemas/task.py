@@ -10,6 +10,18 @@ if TYPE_CHECKING:
     from .comment import CommentResponse
 
 
+
+class ProjectSummary(BaseModel):
+    id: str
+    name: str
+    # image_url: Optional[str] = None
+
+class UserSummary(BaseModel):
+    id: str
+    name: str
+    avatar_url: Optional[str] = None
+
+
 class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -67,6 +79,13 @@ class TaskResponse(TaskBase):
     completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    # Expanded details for frontend
+    project: Optional['ProjectSummary'] = None
+    assignee: Optional['UserSummary'] = None
+
+
+
 
 
 class TaskWithComments(TaskResponse):
