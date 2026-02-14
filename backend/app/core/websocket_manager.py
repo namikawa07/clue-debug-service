@@ -298,6 +298,17 @@ class WebSocketManager:
             
             await self.send_personal_message(user_id, message)
 
+    async def broadcast_to_space(self, space_id: str, message: WSMessage, exclude_user: str = None):
+        """Broadcast message to all users subscribed to a space (alias for broadcast_to_project)"""
+        if space_id not in self.project_rooms:
+            return
+        
+        for user_id in self.project_rooms[space_id].copy():
+            if exclude_user and user_id == exclude_user:
+                continue
+            
+            await self.send_personal_message(user_id, message)
+
     async def broadcast_to_task(self, task_id: str, message: WSMessage, exclude_user: str = None):
         """Broadcast message to all users subscribed to a task"""
         if task_id not in self.task_rooms:

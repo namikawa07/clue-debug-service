@@ -11,7 +11,7 @@ from app.services.notification_service import notification_service, Notification
 from app.services.activity_feed_service import activity_feed_service
 from app.services.presence_service import presence_service
 from app.services.task_service import TaskService
-from app.services.project_service import ProjectService
+from app.services.space_service import SpaceService
 from app.core.websocket_manager import ws_manager, WSMessage, MessageType
 from app.database import get_db
 import logging
@@ -45,7 +45,7 @@ class WebSocketEventListeners:
                 db = next(get_db())
                 try:
                     task_service = TaskService(db)
-                    project_service = ProjectService(db)
+                    space_service = SpaceService(db)
                     
                     # Get tasks that need notification
                     tasks_due_soon = await task_service.get_tasks_due_between(
@@ -58,13 +58,13 @@ class WebSocketEventListeners:
                     # Process tasks due soon
                     for task in tasks_due_soon:
                         if not hasattr(task, '_notified_due_soon') or not task._notified_due_soon:
-                            # Get project for workspace info
-                            project = await project_service.get_by_id(task.project_id)
+                            # Get space for workspace info
+                            space = await space_service.get_by_id(task.space_id)
                             
                             await notification_service.notify_task_due_soon(
                                 task_id=str(task.id),
-                                workspace_id=str(project.workspace_id),
-                                project_id=str(task.project_id),
+                                workspace_id=str(space.workspace_id),
+                                space_id=str(task.space_id),
                                 assigned_to=str(task.assigned_to) if task.assigned_to else None,
                                 task_title=task.title,
                                 due_date=task.due_date
@@ -77,13 +77,13 @@ class WebSocketEventListeners:
                     # Process overdue tasks
                     for task in tasks_overdue:
                         if not hasattr(task, '_notified_overdue') or not task._notified_overdue:
-                            # Get project for workspace info
-                            project = await project_service.get_by_id(task.project_id)
+                            # Get space for workspace info
+                            space = await space_service.get_by_id(task.space_id)
                             
                             await notification_service.notify_task_overdue(
                                 task_id=str(task.id),
-                                workspace_id=str(project.workspace_id),
-                                project_id=str(task.project_id),
+                                workspace_id=str(space.workspace_id),
+                                space_id=str(task.space_id),
                                 assigned_to=str(task.assigned_to) if task.assigned_to else None,
                                 task_title=task.title,
                                 due_date=task.due_date
@@ -117,7 +117,8 @@ class WebSocketEventListeners:
                 # Send daily summaries
                 db = next(get_db())
                 try:
-                    workspace_service = ProjectService(db)
+                    from app.services.workspace_service import WorkspaceService
+                    workspace_service = WorkspaceService(db)
                     
                     # Get all workspaces (in a real implementation, you'd get all users)
                     workspaces = await workspace_service.get_all_workspaces()  # This would need to be implemented
@@ -218,31 +219,31 @@ class WebSocketEventListeners:
             try:
                 await asyncio.sleep(1800)  # Check every 30 minutes
                 
-                # Check for inactive projects
+                # Check for inactive spaces
                 db = next(get_db())
                 try:
-                    project_service = ProjectService(db)
+                    space_service = SpaceService(db)
                     
-                    # Get all projects
-                    projects = await project_service.get_all_projects()
+                    # Get all spaces
+                    spaces = await space_service.get_all_spaces()
                     
-                    for project in projects:
-                        progress = await activity_feed_service.get_project_progress(str(project.id))
+                    for space in spaces:
+                        progress = await activity_feed_service.get_space_progress(str(space.id))
                         
                         # Alert if no activity for 7 days
                         if progress["total_activities"] == 0:
-                            await self._send_project_alert(
-                                project_id=str(project.id),
-                                alert_type="inactive_project",
-                                message=f"Project '{project.name}' has had no activity for 7 days"
+                            await self._send_space_alert(
+                                space_id=str(space.id),
+                                alert_type="inactive_space",
+                                message=f"Space '{space.name}' has had no activity for 7 days"
                             )
                         
-                        # Alert if project is falling behind
+                        # Alert if space is falling behind
                         elif progress["activity_trend"] == "decreasing":
-                            await self._send_project_alert(
-                                project_id=str(project.id),
+                            await self._send_space_alert(
+                                space_id=str(space.id),
                                 alert_type="decreasing_activity",
-                                message=f"Activity in project '{project.name}' is decreasing"
+                                message=f"Activity in space '{space.name}' is decreasing"
                             )
                 
                 finally:
@@ -251,29 +252,29 @@ class WebSocketEventListeners:
             except Exception as e:
                 logger.error(f"Error in workspace activity monitor: {e}")
 
-    async def _send_project_alert(
+    async def _send_space_alert(
         self,
-        project_id: str,
+        space_id: str,
         alert_type: str,
         message: str
     ):
-        """Send project alert to workspace members"""
+        """Send space alert to workspace members"""
         
         alert_message = WSMessage(
-            type="project_alert",
+            type="space_alert",
             data={
-                "project_id": project_id,
+                "space_id": space_id,
                 "alert_type": alert_type,
                 "message": message,
                 "timestamp": datetime.utcnow().isoformat()
             },
             timestamp=datetime.utcnow(),
-            room_id=project_id,
+            room_id=space_id,
             user_id="system"
         )
         
-        await ws_manager.broadcast_to_project(project_id, alert_message)
-        logger.info(f"Sent project alert for {project_id}: {alert_type}")
+        await ws_manager.broadcast_to_space(space_id, alert_message)
+        logger.info(f"Sent space alert for {space_id}: {alert_type}")
 
     async def handle_user_connected(
         self,

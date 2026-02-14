@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 
-import { getCurrent } from "@/features/auth/queries";
-import { ProjectSettingsClient } from "./client";
 
-const ProjectSettingsPage = async () => {
+import { getCurrent } from "@/features/auth/queries";
+import { SpaceIdClient } from "./client";
+
+
+const SpaceIdPage = async () => {
     const user = await getCurrent();
     if (!user) redirect("/signin");
 
-    return <ProjectSettingsClient />;
+    return <SpaceIdClient />;
 };
 
-export default ProjectSettingsPage;
+export default SpaceIdPage;

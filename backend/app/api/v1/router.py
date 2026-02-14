@@ -4,7 +4,6 @@ from fastapi import APIRouter
 from . import auth
 from . import workspaces
 from . import tasks
-from . import projects
 from . import epics
 from . import sprints
 from . import websocket
@@ -15,7 +14,6 @@ from . import integration
 auth_router = auth.router
 workspaces_router = workspaces.router
 tasks_router = tasks.router
-projects_router = projects.router
 epics_router = epics.router
 sprints_router = sprints.router
 websocket_router = websocket.router
@@ -30,7 +28,6 @@ api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(workspaces_router, tags=["Workspaces"])
 api_router.include_router(tasks_router, tags=["Tasks"])
-api_router.include_router(projects_router, tags=["Projects"])
 api_router.include_router(epics_router, tags=["Epics"])
 api_router.include_router(sprints_router, tags=["Sprints"])
 api_router.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])

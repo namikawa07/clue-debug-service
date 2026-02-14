@@ -13,7 +13,7 @@ class Sprint(Base):
     __tablename__ = "sprints"
 
     id = Column(String(10), primary_key=True, default=generate_sprint_id)
-    project_id = Column(String(12), ForeignKey("projects.id"), nullable=False)
+    space_id = Column(String(12), ForeignKey("spaces.id"), nullable=False)
     name = Column(String(255), nullable=False)
     start_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=False)
@@ -22,7 +22,7 @@ class Sprint(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    project = relationship("Project", back_populates="sprints")
+    space = relationship("Space", back_populates="sprints")
     tasks = relationship("SprintTask", back_populates="sprint")
 
 

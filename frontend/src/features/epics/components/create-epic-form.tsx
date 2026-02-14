@@ -29,14 +29,14 @@ import { DottedSeparator } from "@/components/dotted-separator";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { createEpicSchema } from "@/features/tasks/schemas";
 import { useCreateEpic } from "../api/use-create-epic";
-import { useProjectId } from "@/features/projects/hooks/use-project-id";
+import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 
 interface CreateEpicFormProps {
     onCancel?: () => void;
 }
 
 export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
-    const projectId = useProjectId();
+    const spaceId = useSpaceId();
     const { mutate, isPending } = useCreateEpic();
 
     const form = useForm<any>({
@@ -45,12 +45,12 @@ export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
             title: "",
             status: "todo",
             priority: "medium",
-            projectId: projectId,
+            spaceId: spaceId,
         }
     });
 
     const onSubmit = (values: z.infer<typeof createEpicSchema>) => {
-        mutate({ ...values, projectId }, {
+        mutate({ ...values, spaceId }, {
             onSuccess: () => {
                 form.reset();
                 // onCancel?.(); // Keep open to create multiple? Or close? User choice. Let's keep open for now or reset.

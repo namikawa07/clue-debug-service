@@ -295,7 +295,7 @@ function TaskRow({ task, isSubtask = false, level = 0 }: TaskRowProps) {
 
                     {/* Actions Column */}
                     <div className="py-3 px-4 w-[48px] shrink-0">
-                        <TaskActions id={task.$id || task.id} projectId={task.projectId}>
+                        <TaskActions id={task.$id || task.id} spaceId={task.spaceId}>
                             <button className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <MoreHorizontal size={16} />
                             </button>
@@ -416,6 +416,8 @@ interface DataSpreadsheetProps {
 }
 
 export function DataSpreadsheet({ data }: DataSpreadsheetProps) {
+    const { open: openCreateTask } = useCreateTaskModel();
+
     // Group tasks by status
     const groupedTasks = useMemo(() => {
         const groups: Record<string, Task[]> = {};
@@ -443,7 +445,7 @@ export function DataSpreadsheet({ data }: DataSpreadsheetProps) {
                 </div>
                 <p className="text-sm font-medium text-gray-900 mb-1">No tasks found</p>
                 <p className="text-xs text-gray-500 mb-4">Create your first task to get started</p>
-                <Button onClick={useCreateTaskModel().open} className="w-fit">
+                <Button onClick={openCreateTask} className="w-fit">
                     <Plus className="size-4 mr-2" />
                     Create Task
                 </Button>

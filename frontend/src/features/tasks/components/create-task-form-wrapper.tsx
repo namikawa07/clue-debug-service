@@ -3,10 +3,10 @@ import { Loader } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { useGetProjects } from "@/features/projects/api/use-get-projects";
+import { useGetSpaces } from "@/features/spaces/api/use-get-spaces";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { CreateTaskForm } from "./create-task-form";
-import { useProjectId } from "@/features/projects/hooks/use-project-id";
+import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 
 interface CreateTaskFormWrapperProps {
     onCancel: () => void;
@@ -16,15 +16,15 @@ export const CreateTaskFormWrapper = ({
     onCancel
 }: CreateTaskFormWrapperProps) => {
     const workspaceId = useWorkspaceId();
-    const projectId = useProjectId();
+    const spaceId = useSpaceId();
 
-    const { data: projects, isLoading: isLoadingProjects } = useGetProjects({ workspaceId });
+    const { data: spaces, isLoading: isLoadingSpaces } = useGetSpaces({ workspaceId });
     const { data: members, isLoading: isLoadingMembers } = useGetMembers({ workspaceId });
 
-    const projectOptions = projects?.documents.map((project) => ({
-        id: project.id,
-        name: project.name,
-        imageUrl: project.imageUrl || project.image_url || ''
+    const spaceOptions = spaces?.documents.map((space) => ({
+        id: space.id,
+        name: space.name,
+        imageUrl: space.imageUrl || space.image_url || ''
     })) || [];
 
     const memberOptions = members?.documents.map((member: any) => ({
@@ -33,7 +33,7 @@ export const CreateTaskFormWrapper = ({
         avatarColor: member.avatarColor || member.avatar_color,
     })) || [];
 
-    const isLoading = isLoadingProjects || isLoadingMembers;
+    const isLoading = isLoadingSpaces || isLoadingMembers;
 
     if (isLoading) {
         return (
@@ -48,9 +48,9 @@ export const CreateTaskFormWrapper = ({
     return (
         <CreateTaskForm
             onCancel={onCancel}
-            projectOptions={projectOptions}
+            spaceOptions={spaceOptions}
             memberOptions={memberOptions}
-            initialProjectId={projectId}
+            initialSpaceId={spaceId}
         />
     );
 };

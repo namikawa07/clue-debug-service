@@ -8,7 +8,7 @@ from sqlalchemy import select, and_, or_
 
 from app.models.task import Task
 from app.models.user import User
-from app.models.project import Project
+from app.models.space import Space
 from app.services.task_service import TaskService
 from app.services.realtime_task_service import realtime_task_service
 from app.services.notification_service import notification_service
@@ -29,18 +29,18 @@ class EnhancedTaskService:
     async def create_task_with_realtime(
         self,
         task_data: Dict[str, Any],
-        project_id: str,
+        space_id: str,
         created_by: str,
         notify_users: bool = True
     ) -> Task:
         """Create task with real-time notifications"""
         
-        # Get project details for workspace info
-        result = await self.db.execute(select(Project).where(Project.id == project_id))
-        project = result.scalar_one_or_none()
+        # Get space details for workspace info
+        result = await self.db.execute(select(Space).where(Space.id == space_id))
+        space = result.scalar_one_or_none()
         
-        if not project:
-            raise ValueError("Project not found")
+        if not space:
+            raise ValueError("Space not found")
         
         # Get user details
         result = await self.db.execute(select(User).where(User.id == created_by))
@@ -55,7 +55,7 @@ class EnhancedTaskService:
         
         # Create the task using base service
         task = await self.base_service.create(
-            project_id=project_id,
+            space_id=space_id,
             data=create_data,
             user_id=created_by
         )
@@ -63,7 +63,7 @@ class EnhancedTaskService:
         # Real-time notifications (using background tasks)
         asyncio.create_task(self._handle_task_creation_realtime(
             task=task,
-            project=project,
+            space=space,
             user=user,
             notify_users=notify_users
         ))
@@ -86,9 +86,9 @@ class EnhancedTaskService:
         if not existing_task:
             raise ValueError("Task not found")
         
-        # Get project and user details
-        result = await self.db.execute(select(Project).where(Project.id == existing_task.project_id))
-        project = result.scalar_one_or_none()
+        # Get space and user details
+        result = await self.db.execute(select(Space).where(Space.id == existing_task.space_id))
+        space = result.scalar_one_or_none()
         
         result = await self.db.execute(select(User).where(User.id == updated_by))
         user = result.scalar_one_or_none()
@@ -116,7 +116,7 @@ class EnhancedTaskService:
         # Real-time notifications (using background tasks)
         asyncio.create_task(self._handle_task_update_realtime(
             task=task,
-            project=project,
+            space=space,
             user=user,
             old_data=old_data,
             new_data=new_data,
@@ -141,21 +141,21 @@ class EnhancedTaskService:
         if not task:
             raise ValueError("Task not found")
         
-        # Get project and user details
-        result = await self.db.execute(select(Project).where(Project.id == task.project_id))
-        project = result.scalar_one_or_none()
+        # Get space and user details
+        result = await self.db.execute(select(Space).where(Space.id == task.space_id))
+        space = result.scalar_one_or_none()
         
         result = await self.db.execute(select(User).where(User.id == deleted_by))
         user = result.scalar_one_or_none()
         
         # Delete the task using base service
-        success = await self.base_service.delete(task_id)
+        success = await self.base_service.delete(task_id, deleted_by)
         
         if success:
             # Real-time notifications (using background tasks)
             asyncio.create_task(self._handle_task_deletion_realtime(
                 task=task,
-                project=project,
+                space=space,
                 user=user
             ))
         
@@ -177,9 +177,9 @@ class EnhancedTaskService:
         if not task:
             raise ValueError("Task not found")
         
-        # Get project and user details
-        result = await self.db.execute(select(Project).where(Project.id == task.project_id))
-        project = result.scalar_one_or_none()
+        # Get space and user details
+        result = await self.db.execute(select(Space).where(Space.id == task.space_id))
+        space = result.scalar_one_or_none()
         
         result = await self.db.execute(select(User).where(User.id == assigned_by))
         assigner = result.scalar_one_or_none()
@@ -197,7 +197,7 @@ class EnhancedTaskService:
         # Real-time notifications
         asyncio.create_task(self._handle_task_assignment_realtime(
             task=updated_task,
-            project=project,
+            space=space,
             assigner=assigner,
             assignee=assignee,
             old_assignee=old_assignee,
@@ -224,9 +224,9 @@ class EnhancedTaskService:
         
         old_status = task.status.value
         
-        # Get project and user details
-        result = await self.db.execute(select(Project).where(Project.id == task.project_id))
-        project = result.scalar_one_or_none()
+        # Get space and user details
+        result = await self.db.execute(select(Space).where(Space.id == task.space_id))
+        space = result.scalar_one_or_none()
         
         result = await self.db.execute(select(User).where(User.id == changed_by))
         user = result.scalar_one_or_none()
@@ -239,7 +239,7 @@ class EnhancedTaskService:
         # Real-time notifications
         asyncio.create_task(self._handle_task_status_change_realtime(
             task=updated_task,
-            project=project,
+            space=space,
             user=user,
             old_status=old_status,
             new_status=new_status,
@@ -291,17 +291,17 @@ class EnhancedTaskService:
     async def _handle_task_creation_realtime(
         self,
         task: Task,
-        project: Project,
+        space: Space,
         user: User,
         notify_users: bool
     ):
         """Handle real-time notifications for task creation"""
         try:
-            # Notify task updated to all project members
+            # Notify task updated to all space members
             await realtime_task_service.notify_task_updated(
                 task_id=str(task.id),
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 updated_by=str(user.id),
                 changes={"action": "created"},
                 old_task_data=None,
@@ -313,8 +313,8 @@ class EnhancedTaskService:
                 action="created",
                 user_id=str(user.id),
                 user_name=user.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 changes={"created": True}
@@ -324,8 +324,8 @@ class EnhancedTaskService:
             if task.assigned_to and task.assigned_to != user.id and notify_users:
                 await notification_service.notify_task_assigned(
                     task_id=str(task.id),
-                    workspace_id=str(project.workspace_id),
-                    project_id=str(project.id),
+                    workspace_id=str(space.workspace_id),
+                    space_id=str(space.id),
                     assigned_to=str(task.assigned_to),
                     assigned_by=str(user.id),
                     task_title=task.title
@@ -337,7 +337,7 @@ class EnhancedTaskService:
     async def _handle_task_update_realtime(
         self,
         task: Task,
-        project: Project,
+        space: Space,
         user: User,
         old_data: Dict[str, Any],
         new_data: Dict[str, Any],
@@ -350,8 +350,8 @@ class EnhancedTaskService:
             # Notify task updated
             await realtime_task_service.notify_task_updated(
                 task_id=str(task.id),
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 updated_by=str(user.id),
                 changes=changes,
                 old_task_data=old_data,
@@ -363,8 +363,8 @@ class EnhancedTaskService:
                 action="updated",
                 user_id=str(user.id),
                 user_name=user.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 changes=changes
@@ -374,8 +374,8 @@ class EnhancedTaskService:
             if task.assigned_to and old_assignee != str(task.assigned_to):
                 await realtime_task_service.notify_task_assigned(
                     task_id=str(task.id),
-                    workspace_id=str(project.workspace_id),
-                    project_id=str(project.id),
+                    workspace_id=str(space.workspace_id),
+                    space_id=str(space.id),
                     assigned_to=str(task.assigned_to),
                     assigned_by=str(user.id),
                     old_assignee=old_assignee
@@ -384,8 +384,8 @@ class EnhancedTaskService:
                 if notify_assignee:
                     await notification_service.notify_task_assigned(
                         task_id=str(task.id),
-                        workspace_id=str(project.workspace_id),
-                        project_id=str(project.id),
+                        workspace_id=str(space.workspace_id),
+                        space_id=str(space.id),
                         assigned_to=str(task.assigned_to),
                         assigned_by=str(user.id),
                         task_title=task.title
@@ -397,7 +397,7 @@ class EnhancedTaskService:
     async def _handle_task_deletion_realtime(
         self,
         task: Task,
-        project: Project,
+        space: Space,
         user: User
     ):
         """Handle real-time notifications for task deletion"""
@@ -407,28 +407,28 @@ class EnhancedTaskService:
                 action="deleted",
                 user_id=str(user.id),
                 user_name=user.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 changes={"deleted": True}
             )
             
-            # Broadcast deletion to project
+            # Broadcast deletion to space
             delete_message = WSMessage(
                 type=MessageType.TASK_DELETED,
                 data={
                     "task_id": str(task.id),
                     "task_title": task.title,
                     "deleted_by": str(user.id),
-                    "project_id": str(project.id)
+                    "space_id": str(space.id)
                 },
                 timestamp=datetime.utcnow(),
-                room_id=str(project.id),
+                room_id=str(space.id),
                 user_id=str(user.id)
             )
             
-            await ws_manager.broadcast_to_project(str(project.id), delete_message)
+            await ws_manager.broadcast_to_project(str(space.id), delete_message)
         
         except Exception as e:
             logger.error(f"Error in task deletion real-time handling: {e}")
@@ -436,7 +436,7 @@ class EnhancedTaskService:
     async def _handle_task_assignment_realtime(
         self,
         task: Task,
-        project: Project,
+        space: Space,
         assigner: User,
         assignee: User,
         old_assignee: Optional[str],
@@ -447,8 +447,8 @@ class EnhancedTaskService:
             # Notify assignment
             await realtime_task_service.notify_task_assigned(
                 task_id=str(task.id),
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 assigned_to=str(assignee.id),
                 assigned_by=str(assigner.id),
                 old_assignee=old_assignee
@@ -459,8 +459,8 @@ class EnhancedTaskService:
                 action="assigned",
                 user_id=str(assigner.id),
                 user_name=assigner.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 changes={"assigned_to": str(assignee.id)}
@@ -470,8 +470,8 @@ class EnhancedTaskService:
             if notify:
                 await notification_service.notify_task_assigned(
                     task_id=str(task.id),
-                    workspace_id=str(project.workspace_id),
-                    project_id=str(project.id),
+                    workspace_id=str(space.workspace_id),
+                    space_id=str(space.id),
                     assigned_to=str(assignee.id),
                     assigned_by=str(assigner.id),
                     task_title=task.title
@@ -483,7 +483,7 @@ class EnhancedTaskService:
     async def _handle_task_status_change_realtime(
         self,
         task: Task,
-        project: Project,
+        space: Space,
         user: User,
         old_status: str,
         new_status: str,
@@ -494,8 +494,8 @@ class EnhancedTaskService:
             # Notify status change
             await realtime_task_service.notify_task_status_changed(
                 task_id=str(task.id),
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 old_status=old_status,
                 new_status=new_status,
                 changed_by=str(user.id)
@@ -506,8 +506,8 @@ class EnhancedTaskService:
                 action="updated",  # Could be "completed" or "status_changed"
                 user_id=str(user.id),
                 user_name=user.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 changes={"status": {"old": old_status, "new": new_status}}
@@ -515,17 +515,17 @@ class EnhancedTaskService:
             
             # Handle completion notification
             if new_status == "done" and notify_team:
-                # Get project members to notify
-                from app.services.project_service import ProjectService
-                project_service = ProjectService(self.db)
-                members = await project_service.get_members(str(project.id))
+                # Get space members to notify
+                from app.services.space_service import SpaceService
+                space_service = SpaceService(self.db)
+                members = await space_service.get_members(str(space.id))
                 notify_users = [str(member.id) for member in members if str(member.id) != str(user.id)]
                 
                 if notify_users:
                     await notification_service.notify_task_completed(
                         task_id=str(task.id),
-                        workspace_id=str(project.workspace_id),
-                        project_id=str(project.id),
+                        workspace_id=str(space.workspace_id),
+                        space_id=str(space.id),
                         completed_by=str(user.id),
                         task_title=task.title,
                         notify_users=notify_users
@@ -544,15 +544,15 @@ class EnhancedTaskService:
     ):
         """Handle real-time notifications for comment additions"""
         try:
-            # Get project details
-            result = await self.db.execute(select(Project).where(Project.id == task.project_id))
-            project = result.scalar_one_or_none()
+            # Get space details
+            result = await self.db.execute(select(Space).where(Space.id == task.space_id))
+            space = result.scalar_one_or_none()
             
             # Handle comment notification
             await realtime_task_service.handle_comment_added(
                 task_id=str(task.id),
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 comment_id=comment_id,
                 comment_content=comment_content,
                 user_id=str(user.id),
@@ -564,8 +564,8 @@ class EnhancedTaskService:
             await activity_feed_service.log_comment_activity(
                 user_id=str(user.id),
                 user_name=user.name,
-                workspace_id=str(project.workspace_id),
-                project_id=str(project.id),
+                workspace_id=str(space.workspace_id),
+                space_id=str(space.id),
                 task_id=str(task.id),
                 task_title=task.title,
                 comment_content=comment_content
@@ -575,8 +575,8 @@ class EnhancedTaskService:
             if task.assigned_to and task.assigned_to != user.id:
                 await notification_service.notify_comment_added(
                     task_id=str(task.id),
-                    workspace_id=str(project.workspace_id),
-                    project_id=str(project.id),
+                    workspace_id=str(space.workspace_id),
+                    space_id=str(space.id),
                     comment_author=str(user.id),
                     comment_author_name=user.name,
                     task_title=task.title,
@@ -588,8 +588,8 @@ class EnhancedTaskService:
             for mentioned_user in mentioned_users:
                 await notification_service.notify_mention(
                     task_id=str(task.id),
-                    workspace_id=str(project.workspace_id),
-                    project_id=str(project.id),
+                    workspace_id=str(space.workspace_id),
+                    space_id=str(space.id),
                     mentioned_user=mentioned_user,
                     mentioned_by=str(user.id),
                     mentioned_by_name=user.name,

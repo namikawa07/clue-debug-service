@@ -9,7 +9,7 @@ import { createTaskSchema } from "../schemas";
 const app = new Hono()
   .delete("/:taskId", async (c) => {
     const supabase = await createSupabaseClient();
-    
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -59,7 +59,7 @@ const app = new Hono()
       "query",
       z.object({
         workspaceId: z.string(),
-        projectId: z.string().nullish(),
+        spaceId: z.string().nullish(),
         assigneeId: z.string().nullish(),
         status: z.nativeEnum(TaskStatus).nullish(),
         search: z.string().nullish(),
@@ -69,14 +69,14 @@ const app = new Hono()
     ),
     async (c) => {
       const supabase = await createSupabaseClient();
-      
+
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const { workspaceId, projectId, status, search, assigneeId, dueDate, teamId } =
+      const { workspaceId, spaceId, status, search, assigneeId, dueDate, teamId } =
         c.req.valid("query");
 
       if (!workspaceId) {
@@ -100,7 +100,8 @@ const app = new Hono()
         .from('tasks')
         .select(`
           *,
-          project:projects (
+          *,
+          space:spaces (
             id,
             name,
             image_url
@@ -115,8 +116,8 @@ const app = new Hono()
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
 
-      if (projectId) {
-        query = query.eq('project_id', projectId);
+      if (spaceId) {
+        query = query.eq('space_id', spaceId);
       }
 
       if (status) {
@@ -145,7 +146,7 @@ const app = new Hono()
         return c.json({ error: tasksError.message }, 500);
       }
 
-      return c.json({ 
+      return c.json({
         data: {
           documents: tasks || [],
           total: tasks?.length || 0,
@@ -158,31 +159,31 @@ const app = new Hono()
     zValidator("json", createTaskSchema),
     async (c) => {
       const supabase = await createSupabaseClient();
-      
+
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const { name, status, projectId, assigneeId, dueDate, description } = c.req.valid("json");
+      const { name, status, spaceId, assigneeId, dueDate, description } = c.req.valid("json");
 
-      // Get project to check workspace
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
+      // Get space to check workspace
+      const { data: space, error: spaceError } = await supabase
+        .from('spaces')
         .select('workspace_id')
-        .eq('id', projectId)
+        .eq('id', spaceId)
         .single();
 
-      if (projectError || !project) {
-        return c.json({ error: "Project not found" }, 404);
+      if (spaceError || !space) {
+        return c.json({ error: "Space not found" }, 404);
       }
 
       // Check if user is a member of this workspace
       const { data: member, error: memberError } = await supabase
         .from('members')
         .select('*')
-        .eq('workspace_id', project.workspace_id)
+        .eq('workspace_id', space.workspace_id)
         .eq('user_id', user.id)
         .single();
 
@@ -194,7 +195,7 @@ const app = new Hono()
       const { data: lastTask } = await supabase
         .from('tasks')
         .select('position')
-        .eq('workspace_id', project.workspace_id)
+        .eq('workspace_id', space.workspace_id)
         .order('position', { ascending: false })
         .limit(1);
 
@@ -206,8 +207,8 @@ const app = new Hono()
         .insert({
           title: name,
           status: status || TaskStatus.TODO,
-          project_id: projectId,
-          workspace_id: project.workspace_id,
+          space_id: spaceId,
+          workspace_id: space.workspace_id,
           assignee_id: assigneeId || null,
           due_date: dueDate ? new Date(dueDate).toISOString() : null,
           description: description || null,
@@ -216,7 +217,7 @@ const app = new Hono()
         })
         .select(`
           *,
-          project:projects (
+          space:spaces (
             id,
             name,
             image_url
@@ -242,7 +243,7 @@ const app = new Hono()
     zValidator("json", updateTaskSchema),
     async (c) => {
       const supabase = await createSupabaseClient();
-      
+
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
@@ -289,7 +290,7 @@ const app = new Hono()
         .eq('id', taskId)
         .select(`
           *,
-          project:projects (
+          space:spaces (
             id,
             name,
             image_url
@@ -326,7 +327,7 @@ const app = new Hono()
     ),
     async (c) => {
       const supabase = await createSupabaseClient();
-      
+
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {

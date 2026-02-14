@@ -30,7 +30,7 @@ class User(Base):
     # Relationships
     owned_workspaces = relationship("Workspace", back_populates="owner")
     workspace_memberships = relationship("Member", back_populates="user")
-    created_projects = relationship("Project", back_populates="created_by_user")
+    created_spaces = relationship("Space", back_populates="created_by_user")
     assigned_tasks = relationship("Task", back_populates="assigned_user", foreign_keys="[Task.assigned_to]")
     comments = relationship("Comment", back_populates="user")
     activities = relationship("ActivityLog", back_populates="user")

@@ -12,7 +12,7 @@ export type Task = {
     status: TaskStatus;
     workspaceId: string;
     assigneeId: string;
-    projectId: string;
+    spaceId: string;
     position: number;
     dueDate: string;
     description?: string;
@@ -26,7 +26,7 @@ export type Task = {
     teamId?: string;
     created_at?: string;
     updated_at?: string;
-    project?: {
+    space?: {
         name: string;
         imageUrl?: string;
     };
@@ -48,7 +48,7 @@ export type Epic = {
     id: string;
     name: string;
     status: string;
-    project_id: string;
+    space_id: string;
     created_at?: string;
     updated_at?: string;
 };

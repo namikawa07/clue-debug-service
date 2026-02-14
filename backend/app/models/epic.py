@@ -11,7 +11,7 @@ class Epic(Base):
     __tablename__ = "epics"
 
     id = Column(String(10), primary_key=True, default=generate_epic_id)
-    project_id = Column(String(12), ForeignKey("projects.id"), nullable=False)
+    space_id = Column(String(12), ForeignKey("spaces.id"), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     priority = Column(SQLEnum(Priority), default=Priority.MEDIUM)
@@ -23,5 +23,5 @@ class Epic(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    project = relationship("Project", back_populates="epics")
+    space = relationship("Space", back_populates="epics")
     tasks = relationship("Task", back_populates="epic")

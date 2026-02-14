@@ -4,7 +4,7 @@ Centralized model exports
 from .user import User
 from .workspace import Workspace
 from .member import Member
-from .project import Project
+from .space import Space
 from .epic import Epic
 from .task import Task
 from .sprint import Sprint
@@ -16,7 +16,7 @@ __all__ = [
     "User",
     "Workspace",
     "Member",
-    "Project",
+    "Space",
     "Epic",
     "Task",
     "Sprint",

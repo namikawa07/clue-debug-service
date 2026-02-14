@@ -15,15 +15,15 @@ from app.services.sprint_service import SprintService
 router = APIRouter()
 
 
-@router.get("/projects/{project_id}", response_model=List[SprintResponse])
-async def list_project_sprints(
-    project_id: str,
+@router.get("/spaces/{space_id}/sprints", response_model=List[SprintResponse])
+async def list_space_sprints(
+    space_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all sprints in a project"""
+    """List all sprints in a space"""
     service = SprintService(db)
-    sprints = await service.get_by_project(project_id)
+    sprints = await service.get_by_project(space_id)
     return sprints
 
 

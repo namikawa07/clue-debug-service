@@ -15,15 +15,15 @@ from app.services.epic_service import EpicService
 router = APIRouter()
 
 
-@router.get("/projects/{project_id}/epics", response_model=List[EpicResponse])
-async def list_project_epics(
-    project_id: str,
+@router.get("/spaces/{space_id}/epics", response_model=List[EpicResponse])
+async def list_space_epics(
+    space_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all epics in a project"""
+    """List all epics in a space"""
     service = EpicService(db)
-    epics = await service.get_by_project(project_id)
+    epics = await service.get_by_project(space_id)
     return epics
 
 

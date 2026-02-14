@@ -21,7 +21,7 @@ export const useGetTask = ({
                 .from('tasks')
                 .select(`
                     *,
-                    project:projects(name),
+                    space:spaces(name),
                     assigned_user:users(name, avatar_url)
                 `)
                 .eq('id', taskId)
@@ -43,21 +43,21 @@ export const useGetTask = ({
                 name: task.title,
                 status: isValidStatus(task.status) ? task.status : TaskStatus.TODO,
                 workspaceId: "", // Will be populated if needed
-                projectId: task.project_id || "",
+                spaceId: task.space_id || "",
                 assigneeId: task.assigned_to || "",
                 position: task.position || 0,
                 dueDate: task.due_date || "",
                 description: task.description,
                 priority: task.priority,
 
-                project: task.project || {
+                space: task.space || {
                     $id: "unknown",
                     $createdAt: "",
                     $updatedAt: "",
-                    $collectionId: "projects",
+                    $collectionId: "spaces",
                     $databaseId: "finepro",
                     $permissions: [],
-                    name: "Unknown Project",
+                    name: "Unknown Space",
                     imageUrl: "",
                     workspaceId: ""
                 },

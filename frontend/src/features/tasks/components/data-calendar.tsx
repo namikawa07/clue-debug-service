@@ -74,7 +74,7 @@ export const DataCalendar = ({ data }: DataCalendarProps) => {
     start: new Date(task.dueDate),
     end: new Date(task.dueDate),
     title: task.name,
-    project: task.project,
+    space: task.project,
     assignee: task.assignee,
     status: task.status,
     id: task.$id,
@@ -111,7 +111,7 @@ export const DataCalendar = ({ data }: DataCalendarProps) => {
             id={event.id}
             title={event.title}
             assignee={event.assignee}
-            project={event.project}
+            space={event.space}
             status={event.status}
           />
         ),

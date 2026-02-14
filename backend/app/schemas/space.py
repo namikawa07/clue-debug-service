@@ -3,38 +3,38 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 
-from ..models.enums import ProjectStatus
+from ..models.enums import SpaceStatus
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .epic import EpicResponse
 
 
-class ProjectBase(BaseModel):
+class SpaceBase(BaseModel):
     name: str
     description: Optional[str] = None
     tech_stack: Dict[str, Any] = {}
-    status: ProjectStatus = ProjectStatus.PLANNING
+    status: SpaceStatus = SpaceStatus.PLANNING
     ai_generated: bool = False
     complexity_score: Optional[float] = None
     start_date: Optional[datetime] = None
     target_end_date: Optional[datetime] = None
 
 
-class ProjectCreateRequest(ProjectBase):
-    pass  # Only needs fields from ProjectBase (name, description, etc.)
+class SpaceCreateRequest(SpaceBase):
+    pass  # Only needs fields from SpaceBase (name, description, etc.)
 
 
-class ProjectCreate(ProjectBase):
+class SpaceCreate(SpaceBase):
     workspace_id: str
     created_by: str
 
 
-class ProjectUpdate(BaseModel):
+class SpaceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     tech_stack: Optional[Dict[str, Any]] = None
-    status: Optional[ProjectStatus] = None
+    status: Optional[SpaceStatus] = None
     ai_generated: Optional[bool] = None
     complexity_score: Optional[float] = None
     start_date: Optional[datetime] = None
@@ -42,7 +42,7 @@ class ProjectUpdate(BaseModel):
     actual_end_date: Optional[datetime] = None
 
 
-class ProjectResponse(ProjectBase):
+class SpaceResponse(SpaceBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: str
@@ -53,6 +53,6 @@ class ProjectResponse(ProjectBase):
     updated_at: Optional[datetime] = None
 
 
-class ProjectWithEpics(ProjectResponse):
-    """Project with its epics included"""
+class SpaceWithEpics(SpaceResponse):
+    """Space with its epics included"""
     epics: List[dict] = []  # Will be populated with EpicResponse dicts

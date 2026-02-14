@@ -21,11 +21,11 @@ from app.services.presence_service import presence_service
 router = APIRouter()
 
 
-# ==================== PROJECT-SCOPED ENDPOINTS ====================
+# ==================== SPACE-SCOPED ENDPOINTS ======================================
 
-@router.get("/projects/{project_id}/tasks", response_model=List[TaskResponse])
+@router.get("/spaces/{space_id}/tasks", response_model=List[TaskResponse])
 async def list_tasks(
-    project_id: str,
+    space_id: str,
     status: Optional[TaskStatus] = Query(None, description="Filter by status"),
     priority: Optional[Priority] = Query(None, description="Filter by priority"),
     assigned_to: Optional[str] = Query(None, description="Filter by assignee"),
@@ -36,11 +36,11 @@ async def list_tasks(
     current_user: User = Depends(get_current_user)
 ):
     """
-    List all tasks in a project with advanced filtering.
+    List all tasks in a space with advanced filtering.
     """
     service = TaskService(db)
-    tasks = await service.get_by_project(
-        project_id=project_id,
+    tasks = await service.get_by_space(
+        space_id=space_id,
         status=status,
         priority=priority,
         assigned_to=assigned_to,
@@ -51,15 +51,15 @@ async def list_tasks(
     return tasks
 
 
-@router.post("/projects/{project_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/spaces/{space_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
-    project_id: str,
+    space_id: str,
     task_data: TaskCreateRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Create a new task in a project with real-time notifications.
+    Create a new task in a space with real-time notifications.
     """
     # Use enhanced service for real-time capabilities
     enhanced_service = EnhancedTaskService(db)
@@ -70,7 +70,7 @@ async def create_task(
     
     task = await enhanced_service.create_task_with_realtime(
         task_data=task_dict,
-        project_id=str(project_id),
+        space_id=str(space_id),
         created_by=str(current_user.id),
         notify_users=True
     )
@@ -103,14 +103,14 @@ async def bulk_update_tasks(
     return {"updated": len(updated_tasks), "success": True}
 
 
-@router.get("/projects/{project_id}/tasks/realtime-stats")
-async def get_project_task_stats(
-    project_id: str,
+@router.get("/spaces/{space_id}/tasks/realtime-stats")
+async def get_space_task_stats(
+    space_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get real-time statistics for tasks in a project.
+    Get real-time statistics for tasks in a space.
     
     ✅ **Real-time Features:**
     - Current active viewers/editors
@@ -120,24 +120,24 @@ async def get_project_task_stats(
     """
     from app.services.activity_feed_service import activity_feed_service
     from app.services.presence_service import presence_service
-    from app.services.project_service import ProjectService
+    from app.services.space_service import SpaceService
     
-    # Check project access
-    project_service = ProjectService(db)
-    if not await project_service.has_access(str(project_id), str(current_user.id)):
+    # Check space access
+    space_service = SpaceService(db)
+    if not await space_service.has_access(str(space_id), str(current_user.id)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to project"
+            detail="Access denied to space"
         )
     
-    # Get project progress
-    progress = await activity_feed_service.get_project_progress(str(project_id))
+    # Get space progress
+    progress = await activity_feed_service.get_project_progress(str(space_id))
     
     # Get current presence
-    presence = await presence_service.get_project_presence(str(project_id))
+    presence = await presence_service.get_project_presence(str(space_id))
     
     return {
-        "project_id": str(project_id),
+        "space_id": str(space_id),
         "progress": progress,
         "current_presence": {
             "online_users": len([p for p in presence if p["status"] == "online"]),
@@ -482,16 +482,16 @@ async def get_task_activity_summary(
     
     # Get recent activities
     since = datetime.utcnow() - timedelta(hours=hours)
-    # Note: In a real implementation we'd filter optimally. Here we fetch project feed and filter in memory for now.
-    # Getting task to find project_id
+    # Note: In a real implementation we'd filter optimally. Here we fetch space feed and filter in memory for now.
+    # Getting task to find space_id
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     
     if not task:
          raise HTTPException(status_code=404, detail="Task not found")
 
-    activities = await activity_feed_service.get_project_feed(
-        project_id=str(task.project_id), 
+    activities = await activity_feed_service.get_space_feed(
+        space_id=str(task.space_id), 
         since=since,
         limit=50
     )
@@ -537,8 +537,6 @@ async def start_viewing_task(
     """
     Mark user as currently viewing a task.
     """
-    from app.services.project_service import ProjectService
-    
     # Get task
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()

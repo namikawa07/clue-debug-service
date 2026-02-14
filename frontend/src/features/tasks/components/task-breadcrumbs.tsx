@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ChevronRightIcon, TrashIcon } from "lucide-react";
 
-import { Project } from "@/features/projects/types";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { Space } from "@/features/spaces/types";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,12 @@ import { useDeleteTask } from "../api/use-delete-task";
 import { useRouter } from "next/navigation";
 
 interface TaskBreadcrumbsProps {
-    project: Project;
+    space: Space;
     task: Task;
 }
 
 export const TaskBreadcrumbs = ({
-    project,
+    space,
     task
 }: TaskBreadcrumbsProps) => {
     const router = useRouter();
@@ -45,17 +45,18 @@ export const TaskBreadcrumbs = ({
     return (
         <div className="flex items-center gap-x-2">
             <ConfirmDialog />
-            <ProjectAvatar
-                name={project.name}
-                image={project.imageUrl}
+            <SpaceAvatar
+                name={space.name}
+                image={space.imageUrl}
                 className="size-6 lg:size-8"
             />
-            <Link href={`/workspaces/${workspaceId}/projects/${project.$id}`}>
+            <Link href={`/workspaces/${workspaceId}/spaces/${space.$id}`}>
                 <p className="text-sm lg:text-lg font-semibold text-muted-foreground hover:opacity-75 transition">
-                    {project.name}
+                    {space.name}
                 </p>
             </Link>
             <ChevronRightIcon className="size-4 lg:size-5 text-muted-foreground" />
+
             <p className="text-sm lg:text-lg font-semibold">
                 {task.name}
             </p>

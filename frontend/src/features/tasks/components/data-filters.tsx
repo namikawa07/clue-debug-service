@@ -1,7 +1,7 @@
 import { FolderIcon, ListChecksIcon, UserIcon } from "lucide-react";
 
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { useGetProjects } from "@/features/projects/api/use-get-projects";
+import { useGetSpaces } from "@/features/spaces/api/use-get-spaces";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
 import {
@@ -18,20 +18,20 @@ import { TaskStatus } from "../types";
 import { useTaskFilters } from "../hooks/use-task-filters";
 
 interface DataFiltersProps {
-    hideProjectFilter?: boolean;
+    hideSpaceFilter?: boolean;
 }
 
-export const DataFilters = ({ hideProjectFilter }: DataFiltersProps) => {
+export const DataFilters = ({ hideSpaceFilter }: DataFiltersProps) => {
     const workspaceId = useWorkspaceId();
 
-    const { data: projects, isLoading: isLoadingProjects } = useGetProjects({ workspaceId });
+    const { data: spaces, isLoading: isLoadingSpaces } = useGetSpaces({ workspaceId });
     const { data: members, isLoading: isLoadingMembers } = useGetMembers({ workspaceId });
 
-    const isLoading = isLoadingProjects || isLoadingMembers;
+    const isLoading = isLoadingSpaces || isLoadingMembers;
 
-    const projectOptions = projects?.documents.map((project) => ({
-        value: project.id,
-        label: project.name
+    const spaceOptions = spaces?.documents.map((space) => ({
+        value: space.id,
+        label: space.name
     }));
 
     const memberOptions = members?.documents.map((member: any) => ({
@@ -42,7 +42,7 @@ export const DataFilters = ({ hideProjectFilter }: DataFiltersProps) => {
     const [{
         status,
         assigneeId,
-        projectId,
+        spaceId,
         dueDate
     }, setFilters] = useTaskFilters();
 
@@ -54,8 +54,8 @@ export const DataFilters = ({ hideProjectFilter }: DataFiltersProps) => {
         setFilters({ assigneeId: value === "all" ? null : value as string });
     }
 
-    const onProjectChange = (value: string) => {
-        setFilters({ projectId: value === "all" ? null : value as string });
+    const onSpaceChange = (value: string) => {
+        setFilters({ spaceId: value === "all" ? null : value as string });
     }
 
     if (isLoading) return null;
@@ -102,23 +102,23 @@ export const DataFilters = ({ hideProjectFilter }: DataFiltersProps) => {
                     ))}
                 </SelectContent>
             </Select>
-            {!hideProjectFilter && (
+            {!hideSpaceFilter && (
                 <Select
-                    defaultValue={projectId ?? undefined}
-                    onValueChange={(value) => onProjectChange(value)}
+                    defaultValue={spaceId ?? undefined}
+                    onValueChange={(value) => onSpaceChange(value)}
                 >
                     <SelectTrigger className="w-full lg:w-auto h-8">
                         <div className="flex items-center pr-2">
                             <FolderIcon className="size-4 mr-2" />
-                            <SelectValue placeholder="All projects" />
+                            <SelectValue placeholder="All spaces" />
                         </div>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All projects</SelectItem>
+                        <SelectItem value="all">All spaces</SelectItem>
                         <SelectSeparator />
-                        {projectOptions?.map((project) => (
-                            <SelectItem key={project.value} value={project.value}>
-                                {project.label}
+                        {spaceOptions?.map((space) => (
+                            <SelectItem key={space.value} value={space.value}>
+                                {space.label}
                             </SelectItem>
                         ))}
                     </SelectContent>

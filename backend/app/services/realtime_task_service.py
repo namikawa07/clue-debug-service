@@ -9,7 +9,7 @@ from sqlalchemy import select, update, and_, or_
 from app.core.websocket_manager import ws_manager, WSMessage, MessageType
 from app.models.task import Task
 from app.models.user import User
-from app.models.project import Project
+from app.models.space import Space
 from app.models.comment import Comment
 from app.database import get_db
 from app.services.activity_service import ActivityService

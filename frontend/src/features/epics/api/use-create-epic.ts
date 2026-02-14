@@ -18,7 +18,7 @@ export const useCreateEpic = () => {
         mutationFn: async (json) => {
             const payload = {
                 ...json,
-                project_id: json.projectId,
+                space_id: json.spaceId,
             };
             const response = await api.post("/epics/", payload);
             return { data: response };

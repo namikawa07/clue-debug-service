@@ -7,25 +7,25 @@ import { ChevronDown, ChevronRight, Plus, LayoutList } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { useGetProjects } from "@/features/projects/api/use-get-projects";
+import { useGetSpaces } from "@/features/spaces/api/use-get-spaces";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { useCreateProjectModel } from "@/features/projects/hooks/use-create-project-modal";
-import { Project } from "@/features/projects/types";
+import { useCreateSpaceModal } from "@/features/spaces/hooks/use-create-space-modal";
+import { Space } from "@/features/spaces/types";
 
-export const Projects = () => {
+export const Spaces = () => {
   const pathname = usePathname();
-  const { open } = useCreateProjectModel();
+  const { open } = useCreateSpaceModal();
   const workspaceId = useWorkspaceId();
-  const { data } = useGetProjects({ workspaceId });
+  const { data } = useGetSpaces({ workspaceId });
 
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const renderProject = (project: Project) => {
-    const href = `/workspaces/${workspaceId}/projects/${project.id}`;
+  const renderSpace = (space: Space) => {
+    const href = `/workspaces/${workspaceId}/spaces/${space.$id}`;
     const isActive = pathname === href;
 
     return (
-      <Link href={href} key={project.id}>
+      <Link href={href} key={space.$id}>
         <div
           className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-all duration-150 cursor-pointer overflow-hidden",
@@ -36,7 +36,7 @@ export const Projects = () => {
         >
           {/* Using LayoutList icon as placeholder if no image, matching snippet style logic */}
           <LayoutList size={14} className="shrink-0" />
-          <span className="truncate">{project.name}</span>
+          <span className="truncate">{space.name}</span>
         </div>
       </Link>
     );
@@ -47,7 +47,7 @@ export const Projects = () => {
       <div className="mt-2">
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-600">Projects</span>
+            <span className="text-xs font-semibold text-gray-600">Spaces</span>
           </div>
           <button
             onClick={open}
@@ -56,7 +56,7 @@ export const Projects = () => {
             <Plus size={14} />
           </button>
         </div>
-        <p className="px-3 py-1 text-xs text-gray-400">No projects yet</p>
+        <p className="px-3 py-1 text-xs text-gray-400">No spaces yet</p>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export const Projects = () => {
           ) : (
             <ChevronRight size={14} className="text-gray-600 shrink-0" />
           )}
-          <span className="text-xs font-semibold text-gray-600 select-none">Projects</span>
+          <span className="text-xs font-semibold text-gray-600 select-none">Spaces</span>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); open(); }}
@@ -85,7 +85,7 @@ export const Projects = () => {
 
       {isExpanded && (
         <div className="space-y-0.5">
-          {data.documents.map((project) => renderProject(project))}
+          {data.documents.map((space) => renderSpace(space))}
 
           <button
             onClick={open}

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { MemberAvatar } from "@/features/members/components/member-avatar";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 
 import { cn } from "@/lib/utils";
 
@@ -38,14 +38,14 @@ import { useUpdateTask } from "../api/use-update-task";
 
 interface EditTaskFormProps {
   onCancel?: () => void;
-  projectOptions: { id: string; name: string; imageUrl: string }[];
+  spaceOptions: { id: string; name: string; imageUrl: string }[];
   memberOptions: { id: string; name: string; avatarColor?: { bg: string; text: string } }[];
   initialValues: Task;
 }
 
 export const EditTaskForm = ({
   onCancel,
-  projectOptions,
+  spaceOptions,
   memberOptions,
   initialValues,
 }: EditTaskFormProps) => {
@@ -182,30 +182,30 @@ export const EditTaskForm = ({
               />
               <FormField
                 control={form.control}
-                name="projectId"
+                name="spaceId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project</FormLabel>
+                    <FormLabel>Space</FormLabel>
                     <Select
                       defaultValue={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select project" />
+                          <SelectValue placeholder="Select space" />
                         </SelectTrigger>
                       </FormControl>
                       <FormMessage />
                       <SelectContent>
-                        {projectOptions.map((project, index) => (
-                          <SelectItem key={`${project.id}-${index}`} value={project.id}>
+                        {spaceOptions.map((space, index) => (
+                          <SelectItem key={`${space.id}-${index}`} value={space.id}>
                             <div className="flex items-center gap-x-2">
-                              <ProjectAvatar
+                              <SpaceAvatar
                                 className="size-6"
-                                name={project.name}
-                                image={project.imageUrl}
+                                name={space.name}
+                                image={space.imageUrl}
                               />
-                              {project.name}
+                              {space.name}
                             </div>
                           </SelectItem>
                         ))}

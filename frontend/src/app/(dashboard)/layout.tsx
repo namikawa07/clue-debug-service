@@ -1,6 +1,6 @@
 import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
 import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
-import { CreateProjectModel } from "@/features/projects/components/create-project-modal";
+import { CreateSpaceModal } from "@/features/spaces/components/create-space-modal";
 import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
 import { NameCheckWrapper } from "@/features/auth/components/NameCheckWrapper";
 import { OnboardingGuard } from "@/features/auth/components/OnboardingGuard";
@@ -18,7 +18,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen bg-neutral-50">
       <OnboardingGuard />
       <CreateWorkspaceModal />
-      <CreateProjectModel />
+      <CreateSpaceModal />
       <CreateTaskModal />
       <EditTaskModal />
       <RealtimeWrapper>

@@ -3,7 +3,7 @@ import { Task, TaskStatus } from "../types";
 import { TaskActions } from "./task-actions";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { cn } from "@/lib/utils";
 import { differenceInDays, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +12,22 @@ interface KanbanCardProps {
   task: Task;
 }
 
-// Color-coded backgrounds based on project name (placeholder logic - can be enhanced)
+// Color-coded backgrounds based on space name (placeholder logic - can be enhanced)
 const getCardColor = (task: Task): string => {
-  const projectName = task.project?.name?.toLowerCase() || "";
+  const spaceName = task.space?.name?.toLowerCase() || "";
   const status = task.status;
 
-  // Color based on project type
-  if (projectName.includes("website")) {
+  // Color based on space type
+  if (spaceName.includes("website")) {
     return "bg-blue-50 border-blue-200";
   }
-  if (projectName.includes("training")) {
+  if (spaceName.includes("training")) {
     return "bg-green-50 border-green-200";
   }
-  if (projectName.includes("webinar")) {
+  if (spaceName.includes("webinar")) {
     return "bg-purple-50 border-purple-200";
   }
-  if (projectName.includes("blog")) {
+  if (spaceName.includes("blog")) {
     return "bg-orange-50 border-orange-200";
   }
 
@@ -97,7 +97,7 @@ export const KanbanCard = ({ task }: KanbanCardProps) => {
             </div>
           )}
         </div>
-        <TaskActions id={task.$id} projectId={task.projectId}>
+        <TaskActions id={task.$id} spaceId={task.spaceId}>
           <MoreHorizontal className="size-4 shrink-0 text-gray-400 hover:text-gray-600 transition opacity-0 group-hover:opacity-100" />
         </TaskActions>
       </div>
@@ -146,19 +146,19 @@ export const KanbanCard = ({ task }: KanbanCardProps) => {
         )}
       </div>
 
-      {/* Project and indicators */}
+      {/* Space and indicators */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          {task.project && (
+          {task.space && (
             <>
-              <ProjectAvatar
+              <SpaceAvatar
                 className="size-4"
                 fallbackClassName="text-[8px]"
-                name={task.project.name}
-                image={task.project.imageUrl}
+                name={task.space.name}
+                image={task.space.imageUrl}
               />
               <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
-                {task.project.name}
+                {task.space.name}
               </span>
             </>
           )}

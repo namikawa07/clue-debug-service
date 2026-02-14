@@ -29,11 +29,11 @@ import { useGetTasks } from "../api/use-get-tasks";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { useCreateTaskModel } from "../hooks/use-create-task-modal";
 import { useBulkUpdateTasks } from "../api/use-bulk-update-tasks";
-import { useProjectId } from "@/features/projects/hooks/use-project-id";
+import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 import { TaskStatus } from "../types";
 
 interface TaskViewSwitcherProps {
-  hideProjectFilter?: boolean;
+  hideSpaceFilter?: boolean;
 }
 
 const VIEW_TABS = [
@@ -44,23 +44,23 @@ const VIEW_TABS = [
 ] as const;
 
 export const TaskViewSwitcher = ({
-  hideProjectFilter,
+  hideSpaceFilter,
 }: TaskViewSwitcherProps) => {
-  const [{ status, assigneeId, projectId, dueDate }, setFilters] = useTaskFilters();
+  const [{ status, assigneeId, spaceId, dueDate }, setFilters] = useTaskFilters();
 
   const [view, setView] = useQueryState("task-view", {
     defaultValue: "list",
   });
 
   const workspaceId = useWorkspaceId();
-  const paramProjectId = useProjectId();
+  const paramSpaceId = useSpaceId();
   const { open } = useCreateTaskModel();
 
   const { mutate: bulkUpdate } = useBulkUpdateTasks();
 
   const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
     workspaceId,
-    projectId: paramProjectId || projectId,
+    spaceId: paramSpaceId || spaceId,
     assigneeId,
     status,
     dueDate,
@@ -146,7 +146,7 @@ export const TaskViewSwitcher = ({
       </div> */}
       {/* Keeping DataFilters visible for verified functionality until I implementing the filter button logic */}
       <div className="mb-4 px-1">
-        <DataFilters hideProjectFilter={hideProjectFilter} />
+        <DataFilters hideSpaceFilter={hideSpaceFilter} />
       </div>
 
       {/* Content */}

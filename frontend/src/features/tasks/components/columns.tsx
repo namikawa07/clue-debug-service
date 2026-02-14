@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreVertical, Mail, Calendar, Rocket, CheckCircle2 } from "lucide-react";
 
 import { MemberAvatar } from "@/features/members/components/member-avatar";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,14 +142,14 @@ export const columns: ColumnDef<Task>[] = [
     id: "actions",
     cell: ({ row }) => {
       const id = row.original.$id;
-      const projectId = row.original.projectId;
+      const spaceId = row.original.spaceId;
 
       // console.log(`🚩🚩🚩\n printing the row original \n 🏁 : ${JSON.stringify(row.original)} \n 🚩🚩`);
       // console.log(`☑️☑️☑️\n printing the id \n 🏁 : ${id} \n ☑️☑️`);
-      // console.log(`✅✅✅\n printing the ProjectId \n 🏁 : ${projectId} \n ✅✅`);
+      // console.log(`✅✅✅\n printing the SpaceId \n 🏁 : ${spaceId} \n ✅✅`);
 
       return (
-        <TaskActions id={id} projectId={projectId}>
+        <TaskActions id={id} spaceId={spaceId}>
           <Button variant="ghost" className="size-8 p-0">
             <MoreVertical className="size-4" />
           </Button>

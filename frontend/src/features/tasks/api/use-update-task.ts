@@ -11,7 +11,7 @@ interface UpdateTaskRequest {
     json: {
         name?: string;
         status?: TaskStatus;
-        projectId?: string;
+        spaceId?: string;
         assigneeId?: string;
         dueDate?: Date;
         description?: string;
@@ -38,7 +38,7 @@ export const useUpdateTask = () => {
             if (dueDate !== undefined) updateData.due_date = dueDate ? dueDate.toISOString() : null;
             if (description !== undefined) updateData.description = description;
 
-            const response = await api.patch<{ id: string; [key: string]: any }>(`/tasks/${taskId}`, updateData);
+            const response = await api.patch<{ id: string;[key: string]: any }>(`/tasks/${taskId}`, updateData);
 
             if (!response) throw new Error("Update failed");
 

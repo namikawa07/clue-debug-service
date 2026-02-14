@@ -9,7 +9,7 @@ export const createTaskSchema = z.object({
     name: z.string().trim().min(1, "Required"),
     status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
     workspaceId: z.string().trim().min(1, "Required"),
-    projectId: z.string().trim().min(1, "Required"),
+    spaceId: z.string().trim().min(1, "Required"),
     dueDate: z.coerce.date(),
     assigneeId: z.string().trim().min(1, "Required"),
     description: z.string().optional(),
@@ -31,5 +31,5 @@ export const createEpicSchema = z.object({
     description: z.string().optional(),
     status: z.enum(["todo", "in_progress", "done"]).default("todo"),
     priority: z.enum(["critical", "high", "medium", "low"]).default("medium"),
-    projectId: z.string().trim().min(1, "Required"),
+    spaceId: z.string().trim().min(1, "Required"),
 });

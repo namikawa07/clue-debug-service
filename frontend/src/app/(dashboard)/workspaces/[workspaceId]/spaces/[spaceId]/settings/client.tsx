@@ -1,10 +1,10 @@
 "use client";
 
 import { CreateEpicForm } from "@/features/epics/components/create-epic-form";
-import { useProjectId } from "@/features/projects/hooks/use-project-id";
+import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 
-export const ProjectSettingsClient = () => {
-    const projectId = useProjectId();
+export const SpaceSettingsClient = () => {
+    const spaceId = useSpaceId();
 
     return (
         <div className="w-full lg:max-w-xl">

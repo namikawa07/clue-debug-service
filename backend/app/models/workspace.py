@@ -20,4 +20,4 @@ class Workspace(Base):
     # Relationships
     owner = relationship("User", back_populates="owned_workspaces")
     members = relationship("Member", back_populates="workspace")
-    projects = relationship("Project", back_populates="workspace")
+    spaces = relationship("Space", back_populates="workspace")

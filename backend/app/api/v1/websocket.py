@@ -14,7 +14,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 from app.models.user import User
-from app.services.project_service import ProjectService
+from app.services.space_service import SpaceService
 from app.services.task_service import TaskService
 from app.services.workspace_service import WorkspaceService
 from app.database import AsyncSessionLocal
@@ -167,8 +167,8 @@ async def handle_join_room(connection, user: User, message: Dict[str, Any]):
     # Validate access to room
     if room_type == "project":
         async with AsyncSessionLocal() as db:
-            project_service = ProjectService(db)
-            has_access = await project_service.has_access(room_id, str(user.id))
+            space_service = SpaceService(db)
+            has_access = await space_service.has_access(room_id, str(user.id))
             if not has_access:
                 await connection.send_message(WSMessage(
                     type=MessageType.ERROR,

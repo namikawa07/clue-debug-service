@@ -16,11 +16,11 @@ import { useEditTaskModel } from "../hooks/use-edit-task-modal";
 
 interface TaskActionsProps {
     id: string;
-    projectId: string;
+    spaceId: string;
     children: React.ReactNode;
 }
 
-export const TaskActions = ({ id, projectId, children }: TaskActionsProps) => {
+export const TaskActions = ({ id, spaceId, children }: TaskActionsProps) => {
     const workspaceId = useWorkspaceId();
     const router = useRouter();
 
@@ -44,8 +44,8 @@ export const TaskActions = ({ id, projectId, children }: TaskActionsProps) => {
         router.push(`/workspaces/${workspaceId}/tasks/${id}`);
     };
 
-    const onOpenProject = () => {
-        router.push(`/workspaces/${workspaceId}/projects/${projectId}`);
+    const onOpenSpace = () => {
+        router.push(`/workspaces/${workspaceId}/spaces/${spaceId}`);
     };
 
     return (
@@ -64,11 +64,11 @@ export const TaskActions = ({ id, projectId, children }: TaskActionsProps) => {
                         Task Details
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                        onClick={onOpenProject}
+                        onClick={onOpenSpace}
                         className="font-medium p-[10px]"
                     >
                         <ExternalLinkIcon className="size-4 mr-2 stroke-2" />
-                        Open Project
+                        Open Space
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={() => open(id)}

@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app.models.task import Task
 from app.models.epic import Epic
-from app.models.project import Project
+from app.models.space import Space
 from app.models.member import Member
 from app.models.enums import TaskStatus, Priority, TaskType, ActionType, EntityType
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -23,13 +23,14 @@ class TaskService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.activity_service = ActivityService(db)
-    
+
     async def get_by_id(self, task_id: str) -> Optional[Task]:
         """Get task by ID with relationships"""
         result = await self.db.execute(
             select(Task)
             .options(
-                selectinload(Task.epic).selectinload(Epic.project),
+                selectinload(Task.epic).selectinload(Epic.space),
+                selectinload(Task.space),
                 selectinload(Task.assigned_user),
                 selectinload(Task.comments)
             )
@@ -37,21 +38,19 @@ class TaskService:
         )
         return result.scalar_one_or_none()
     
-    # ... (get_by_project, get_by_epic logic remains same) ...
-
     async def create(
         self,
-        project_id: str,
+        space_id: str,
         data: TaskCreate,
         user_id: str
     ) -> Task:
         """Create a new task"""
-        # If no epic_id provided, get or create default epic for project
+        # If no epic_id provided, get or create default epic for space
         epic_id = data.epic_id
         if not epic_id:
-            # Get default epic or first epic in project
+            # Get default epic or first epic in space
             result = await self.db.execute(
-                select(Epic).where(Epic.project_id == project_id).limit(1)
+                select(Epic).where(Epic.space_id == space_id).limit(1)
             )
             epic = result.scalar_one_or_none()
             
@@ -60,9 +59,9 @@ class TaskService:
                 from app.utils.id_generator import generate_epic_id
                 epic = Epic(
                     id=generate_epic_id(),
-                    project_id=project_id,
+                    space_id=space_id,
                     name="Backlog",
-                    description="Default backlog for project tasks",
+                    description="Default backlog for space tasks",
                     status="todo",
                     created_by=user_id
                 )
@@ -77,6 +76,7 @@ class TaskService:
         
         task = Task(
             epic_id=epic_id,
+            space_id=space_id,
             title=data.title,
             description=data.description,
             task_type=data.task_type,
@@ -103,15 +103,15 @@ class TaskService:
             action=ActionType.CREATED,
             entity_type=EntityType.TASK,
             entity_id=task.id,
-            changes={"title": task.title, "project_id": str(project_id)}
+            changes={"title": task.title, "space_id": str(space_id)}
         )
         
         # Return fully loaded task to avoid serialization errors
         return await self.get_by_id(task.id)
     
-    async def get_by_project(
+    async def get_by_space(
         self,
-        project_id: str,
+        space_id: str,
         status: Optional[TaskStatus] = None,
         priority: Optional[Priority] = None,
         assigned_to: Optional[str] = None,
@@ -119,24 +119,17 @@ class TaskService:
         skip: int = 0,
         limit: int = 100
     ) -> List[Task]:
-        """Get all tasks in a project with filtering"""
+        """Get all tasks in a space with filtering"""
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"TaskService: Fetching tasks for project {project_id}")
+        logger.info(f"TaskService: Fetching tasks for space {space_id}")
 
-        # First get all epics in the project
-        epic_query = select(Epic.id).where(Epic.project_id == project_id)
-        epic_result = await self.db.execute(epic_query)
-        epic_ids = [row[0] for row in epic_result.fetchall()]
-        
-        logger.info(f"TaskService: Found epics for project {project_id}: {epic_ids}")
-
-        if not epic_ids:
-            logger.warning(f"TaskService: No epics found for project {project_id}. Tasks are linked via Epics, so no tasks can be retrieved.")
-            return []
-        
         # Build task query with filters
-        query = select(Task).where(Task.epic_id.in_(epic_ids))
+        query = select(Task).where(Task.space_id == space_id)
+        
+        # Or fall back to Epic based if migration isn't perfect, but let's assume direct space_id
+        # Actually, for robustness, if space_id is null on task, we might want to check epic->space.
+        # But for new system, use Task.space_id.
         
         if status:
             query = query.where(Task.status == status)
@@ -163,7 +156,8 @@ class TaskService:
         result = await self.db.execute(
             select(Task)
             .options(
-                selectinload(Task.epic).selectinload(Epic.project),
+                selectinload(Task.epic).selectinload(Epic.space),
+                 selectinload(Task.space),
                 selectinload(Task.assigned_user)
             )
             .where(Task.epic_id == epic_id)
@@ -181,17 +175,16 @@ class TaskService:
         skip: int = 0,
         limit: int = 100
     ) -> List[Task]:
-        """Get all tasks in a workspace (across all projects)"""
-        # Join Task -> Epic -> Project
+        """Get all tasks in a workspace (across all spaces)"""
+        # Join Task -> Space
         query = (
             select(Task)
-            .join(Epic, Task.epic_id == Epic.id)
-            .join(Project, Epic.project_id == Project.id)
+            .join(Space, Task.space_id == Space.id)
             .options(
-                selectinload(Task.epic).selectinload(Epic.project),
+                selectinload(Task.space),
                 selectinload(Task.assigned_user)
             )
-            .where(Project.workspace_id == workspace_id)
+            .where(Space.workspace_id == workspace_id)
         )
         
         if status:
@@ -381,6 +374,10 @@ class TaskService:
             if "epic_id" in update_item:
                 task.epic_id = update_item["epic_id"] if update_item["epic_id"] else None
                 changes["epic_id"] = update_item["epic_id"]
+            
+            if "space_id" in update_item:
+                 task.space_id = update_item["space_id"]
+                 changes["space_id"] = update_item["space_id"]
             
             if changes:
                 updated_tasks.append(task)

@@ -23,9 +23,12 @@ def generate_user_id() -> str:
     """Generate user ID"""
     return generate_short_id(12)
 
-def generate_project_id() -> str:
-    """Generate project ID"""
+def generate_space_id() -> str:
+    """Generate space ID"""
     return generate_short_id(12)
+
+# Backward compat alias
+generate_project_id = generate_space_id
 
 def generate_task_id() -> str:
     """Generate task ID"""

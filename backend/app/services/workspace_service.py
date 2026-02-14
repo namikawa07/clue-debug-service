@@ -40,6 +40,14 @@ class WorkspaceService:
         )
         return list(result.scalars().all())
     
+    async def get_all_workspaces(self) -> List[Workspace]:
+        """Get all workspaces (for monitoring/summaries)"""
+        result = await self.db.execute(
+            select(Workspace)
+            .order_by(Workspace.created_at.desc())
+        )
+        return list(result.scalars().all())
+    
     async def create(
         self,
         data: WorkspaceCreate,
@@ -107,23 +115,23 @@ class WorkspaceService:
         """Get task analytics for a workspace"""
         from sqlalchemy import func
         from app.models.task import Task
-        from app.models.project import Project
+        from app.models.space import Space
         from app.models.enums import TaskStatus
         from datetime import datetime
         
         # Get all tasks in the workspace
-        # We need to join Workspace -> Project -> Epic -> Task
-        # Actually, our Task model has direct project_id? 
+        # We need to join Workspace -> Space -> Epic -> Task
+        # Actually, our Task model has direct space_id? 
         # Wait, let me check Task model again.
         
-        # Query tasks via Epic-Project chain
+        # Query tasks via Epic-Space chain
         from app.models.epic import Epic
         
         tasks_query = (
             select(Task)
             .join(Epic, Task.epic_id == Epic.id)
-            .join(Project, Epic.project_id == Project.id)
-            .where(Project.workspace_id == workspace_id)
+            .join(Space, Epic.space_id == Space.id)
+            .where(Space.workspace_id == workspace_id)
         )
         
         result = await self.db.execute(tasks_query)

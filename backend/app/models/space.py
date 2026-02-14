@@ -2,20 +2,20 @@ from sqlalchemy import Column, String, DateTime, Float, Integer, Boolean, JSON, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .enums import ProjectStatus
+from .enums import SpaceStatus
 from ..database import Base
-from ..utils.id_generator import generate_project_id
+from ..utils.id_generator import generate_space_id
 
 
-class Project(Base):
-    __tablename__ = "projects"
+class Space(Base):
+    __tablename__ = "spaces"
 
-    id = Column(String(12), primary_key=True, default=generate_project_id)
+    id = Column(String(12), primary_key=True, default=generate_space_id)
     workspace_id = Column(String(12), ForeignKey("workspaces.id"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     tech_stack = Column(JSON, default=dict)  # frontend, backend, database, hosting
-    status = Column(SQLEnum(ProjectStatus), default=ProjectStatus.PLANNING)
+    status = Column(SQLEnum(SpaceStatus), default=SpaceStatus.PLANNING)
     ai_generated = Column(Boolean, default=False)
     complexity_score = Column(Float, nullable=True)
     start_date = Column(DateTime(timezone=True), nullable=True)
@@ -26,7 +26,7 @@ class Project(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    workspace = relationship("Workspace", back_populates="projects")
-    created_by_user = relationship("User", back_populates="created_projects")
-    epics = relationship("Epic", back_populates="project")
-    sprints = relationship("Sprint", back_populates="project")
+    workspace = relationship("Workspace", back_populates="spaces")
+    created_by_user = relationship("User", back_populates="created_spaces")
+    epics = relationship("Epic", back_populates="space")
+    sprints = relationship("Sprint", back_populates="space")

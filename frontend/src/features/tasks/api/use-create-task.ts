@@ -9,7 +9,7 @@ interface CreateTaskRequest {
         name: string;
         status: TaskStatus;
         workspaceId: string;
-        projectId: string;
+        spaceId: string;
         dueDate: Date;
         assigneeId: string;
         description?: string;
@@ -33,7 +33,7 @@ export const useCreateTask = () => {
     >({
         mutationFn: async ({ json }) => {
             const {
-                projectId,
+                spaceId,
                 name,
                 status,
                 assigneeId,
@@ -48,9 +48,9 @@ export const useCreateTask = () => {
                 isUrgent
             } = json;
 
-            if (!projectId) throw new Error("Project ID is required");
+            if (!spaceId) throw new Error("Space ID is required");
 
-            const response = await api.post<any>(`/projects/${projectId}/tasks`, {
+            const response = await api.post<any>(`/spaces/${spaceId}/tasks`, {
                 title: name,
                 description,
                 status: status,
@@ -73,7 +73,7 @@ export const useCreateTask = () => {
                 $id: response.id,
                 $createdAt: response.created_at,
                 $updatedAt: response.updated_at,
-                projectId: response.project_id,
+                spaceId: response.space_id,
                 assigneeId: response.assigned_to,
             };
 

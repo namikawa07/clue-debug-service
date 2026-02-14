@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { MemberAvatar } from "@/features/members/components/member-avatar";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
 import { cn } from "@/lib/utils";
@@ -40,16 +40,16 @@ import { useGetEpics } from "@/features/epics/api/use-get-epics";
 
 interface CreateTaskFormProps {
   onCancel?: () => void;
-  projectOptions: { id: string, name: string, imageUrl: string }[];
+  spaceOptions: { id: string, name: string, imageUrl: string }[];
   memberOptions: { id: string, name: string; avatarColor?: { bg: string; text: string } }[];
-  initialProjectId?: string;
+  initialSpaceId?: string;
 }
 
 export const CreateTaskForm = ({
   onCancel,
-  projectOptions,
+  spaceOptions,
   memberOptions,
-  initialProjectId,
+  initialSpaceId,
 }: CreateTaskFormProps) => {
   const workspaceId = useWorkspaceId();
   const { mutate, isPending } = useCreateTask();
@@ -61,7 +61,7 @@ export const CreateTaskForm = ({
       workspaceId,
       name: "",
       status: TaskStatus.TODO,
-      projectId: initialProjectId || "",
+      spaceId: initialSpaceId || "",
       epicId: "",
       assigneeId: "",
       description: "",
@@ -72,8 +72,8 @@ export const CreateTaskForm = ({
     },
   });
 
-  const projectId = form.watch("projectId");
-  const { data: epics, isLoading: isLoadingEpics } = useGetEpics({ projectId });
+  const spaceId = form.watch("spaceId");
+  const { data: epics, isLoading: isLoadingEpics } = useGetEpics({ spaceId });
 
   const onSubmit = (values: z.infer<typeof createTaskSchema>) => {
 
@@ -195,11 +195,11 @@ export const CreateTaskForm = ({
               />
               <FormField
                 control={form.control}
-                name="projectId"
+                name="spaceId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Project
+                      Space
                     </FormLabel>
                     <Select
                       defaultValue={field.value}
@@ -207,20 +207,20 @@ export const CreateTaskForm = ({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select project" />
+                          <SelectValue placeholder="Select space" />
                         </SelectTrigger>
                       </FormControl>
                       <FormMessage />
                       <SelectContent>
-                        {projectOptions.map((project, index) => (
-                          <SelectItem key={`${project.id}-${index}`} value={project.id}>
+                        {spaceOptions.map((space, index) => (
+                          <SelectItem key={`${space.id}-${index}`} value={space.id}>
                             <div className="flex items-center gap-x-2">
-                              <ProjectAvatar
+                              <SpaceAvatar
                                 className="size-6"
-                                name={project.name}
-                                image={project.imageUrl}
+                                name={space.name}
+                                image={space.imageUrl}
                               />
-                              {project.name}
+                              {space.name}
                             </div>
                           </SelectItem>
                         ))}
@@ -240,7 +240,7 @@ export const CreateTaskForm = ({
                     <Select
                       defaultValue={field.value}
                       onValueChange={field.onChange}
-                      disabled={isLoadingEpics || !projectId}
+                      disabled={isLoadingEpics || !spaceId}
                     >
                       <FormControl>
                         <SelectTrigger>

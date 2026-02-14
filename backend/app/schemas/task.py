@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 
-class ProjectSummary(BaseModel):
+class SpaceSummary(BaseModel):
     id: str
     name: str
     # image_url: Optional[str] = None
@@ -19,53 +19,52 @@ class ProjectSummary(BaseModel):
 class UserSummary(BaseModel):
     id: str
     name: str
-    avatar_url: Optional[str] = None
 
 
 class TaskBase(BaseModel):
+    """Base class for Task schemas with common fields"""
     title: str
     description: Optional[str] = None
-    task_type: TaskType = TaskType.BACKEND
+    task_type: TaskType = TaskType.TASK
     status: TaskStatus = TaskStatus.TODO
     priority: Priority = Priority.MEDIUM
-    estimated_hours: Optional[float] = None
+    story_points: Optional[int] = None
+    position: int = 0
+    start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
-    dependencies: List[str] = []
-    tags: List[str] = []
-    ai_confidence: Optional[float] = None
-    additional_data: Dict[str, Any] = {}
-    position: Optional[int] = None
-
+    estimated_hours: Optional[float] = None
 
 
 class TaskCreateRequest(TaskBase):
     epic_id: Optional[str] = None
     assigned_to: Optional[str] = None
+    space_id: Optional[str] = None # Optional in request, logic might enforce it
     # created_by is inferred from current_user
 
 
 class TaskCreate(TaskBase):
     epic_id: Optional[str] = None
     assigned_to: Optional[str] = None
+    space_id: Optional[str] = None
     created_by: str
 
 
 class TaskUpdate(BaseModel):
+    """Task update schema - all fields optional for partial updates"""
     title: Optional[str] = None
     description: Optional[str] = None
     task_type: Optional[TaskType] = None
     status: Optional[TaskStatus] = None
     priority: Optional[Priority] = None
-    assigned_to: Optional[str] = None
+    story_points: Optional[int] = None
+    position: Optional[int] = None
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
     actual_hours: Optional[float] = None
-    due_date: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    dependencies: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    ai_confidence: Optional[float] = None
-    additional_data: Optional[Dict[str, Any]] = None
-    position: Optional[int] = None
+    epic_id: Optional[str] = None
+    assigned_to: Optional[str] = None
+    space_id: Optional[str] = None
 
 
 class TaskResponse(TaskBase):
@@ -73,6 +72,7 @@ class TaskResponse(TaskBase):
     
     id: str
     epic_id: Optional[str]
+    space_id: Optional[str]
     assigned_to: Optional[str]
     created_by: str
     actual_hours: float
@@ -81,7 +81,7 @@ class TaskResponse(TaskBase):
     updated_at: Optional[datetime] = None
     
     # Expanded details for frontend
-    project: Optional['ProjectSummary'] = None
+    space: Optional['SpaceSummary'] = None
     assignee: Optional['UserSummary'] = None
 
 

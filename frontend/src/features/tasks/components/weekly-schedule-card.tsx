@@ -1,7 +1,7 @@
 "use client";
 
 import { Task } from "../types";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
@@ -14,29 +14,29 @@ interface WeeklyScheduleCardProps {
 
 // Enhanced color coding system
 const getTaskColor = (task: Task): string => {
-  const projectName = task.project?.name?.toLowerCase() || "";
+  const spaceName = task.space?.name?.toLowerCase() || "";
   const status = task.status;
 
-  // Color based on project type with more variety
-  if (projectName.includes("website")) {
+  // Color based on space type with more variety
+  if (spaceName.includes("website")) {
     return "bg-blue-100 border-blue-300";
   }
-  if (projectName.includes("training") || projectName.includes("employee")) {
+  if (spaceName.includes("training") || spaceName.includes("employee")) {
     return "bg-green-100 border-green-300";
   }
-  if (projectName.includes("webinar")) {
+  if (spaceName.includes("webinar")) {
     return "bg-purple-100 border-purple-300";
   }
-  if (projectName.includes("blog")) {
+  if (spaceName.includes("blog")) {
     return "bg-orange-100 border-orange-300";
   }
-  if (projectName.includes("sales") || projectName.includes("funnel")) {
+  if (spaceName.includes("sales") || spaceName.includes("funnel")) {
     return "bg-pink-100 border-pink-300";
   }
-  if (projectName.includes("mobile") || projectName.includes("app")) {
+  if (spaceName.includes("mobile") || spaceName.includes("app")) {
     return "bg-indigo-100 border-indigo-300";
   }
-  if (projectName.includes("crm") || projectName.includes("integration")) {
+  if (spaceName.includes("crm") || spaceName.includes("integration")) {
     return "bg-cyan-100 border-cyan-300";
   }
 
@@ -131,17 +131,17 @@ export const WeeklyScheduleCard = ({ task, showTime = false }: WeeklyScheduleCar
         {/* Task name */}
         <div className="font-medium line-clamp-2 text-gray-900 text-xs leading-tight">{task.name}</div>
 
-        {/* Project information - moved up before badges */}
-        {task.project && (
+        {/* Space information - moved up before badges */}
+        {task.space && (
           <div className="flex items-center gap-1 mt-0.5">
-            <ProjectAvatar
+            <SpaceAvatar
               className="size-3"
               fallbackClassName="text-[8px]"
-              name={task.project.name}
-              image={task.project.imageUrl}
+              name={task.space.name}
+              image={task.space.imageUrl}
             />
             <span className="text-[10px] text-gray-600 truncate">
-              {task.project.name}
+              {task.space.name}
             </span>
           </div>
         )}

@@ -1,7 +1,7 @@
 # Import all schemas to make them available
 from .user import UserCreate, UserUpdate, UserResponse, UserInDB
 from .workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse, WorkspaceWithMembers, MemberCreate, MemberUpdate, MemberResponse
-from .project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectWithEpics
+from .space import SpaceCreate, SpaceUpdate, SpaceResponse, SpaceWithEpics
 from .epic import EpicCreate, EpicUpdate, EpicResponse, EpicWithTasks
 from .task import TaskCreate, TaskUpdate, TaskResponse, TaskWithComments
 from .sprint import SprintCreate, SprintUpdate, SprintResponse, SprintWithTasks
@@ -16,8 +16,8 @@ __all__ = [
     "WorkspaceCreate", "WorkspaceUpdate", "WorkspaceResponse", "WorkspaceWithMembers",
     "MemberCreate", "MemberUpdate", "MemberResponse",
     
-    # Project schemas
-    "ProjectCreate", "ProjectUpdate", "ProjectResponse", "ProjectWithEpics",
+    # Space schemas
+    "SpaceCreate", "SpaceUpdate", "SpaceResponse", "SpaceWithEpics",
     
     # Epic schemas
     "EpicCreate", "EpicUpdate", "EpicResponse", "EpicWithTasks",

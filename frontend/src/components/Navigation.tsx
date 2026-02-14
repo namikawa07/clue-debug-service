@@ -23,8 +23,8 @@ const routes = [
         activeIcon: GoCheckCircleFill,
     },
     {
-        label: "Projects",
-        href: "/projects",
+        label: "Spaces",
+        href: "/spaces",
         icon: SettingsIcon,
         activeIcon: SettingsIcon,
     },

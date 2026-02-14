@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
-import { Projects } from "@/components/projects";
+import { Spaces } from "@/components/spaces";
 
 export const Sidebar = () => {
   const { data: user } = useCurrent();
@@ -109,7 +109,7 @@ export const Sidebar = () => {
 
           {/* Projects */}
           <div className="mt-2">
-            <Projects />
+            <Spaces />
           </div>
         </div>
       </div>

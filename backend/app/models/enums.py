@@ -20,11 +20,15 @@ class MemberRole(str, enum.Enum):
     MEMBER = "member"
 
 
-class ProjectStatus(str, enum.Enum):
+class SpaceStatus(str, enum.Enum):
     PLANNING = "planning"
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
+
+
+# Backward compat alias
+ProjectStatus = SpaceStatus
 
 
 class EpicStatus(str, enum.Enum):
@@ -34,6 +38,7 @@ class EpicStatus(str, enum.Enum):
 
 
 class TaskType(str, enum.Enum):
+    TASK = "task"
     FRONTEND = "frontend"
     BACKEND = "backend"
     DESIGN = "design"
@@ -67,6 +72,7 @@ class ActionType(str, enum.Enum):
 class EntityType(str, enum.Enum):
     TASK = "task"
     EPIC = "epic"
-    PROJECT = "project"
+    SPACE = "space"
+    PROJECT = "project"  # backward compat
     WORKSPACE = "workspace"
     USER = "user"
