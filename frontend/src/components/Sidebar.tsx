@@ -107,7 +107,7 @@ export const Sidebar = () => {
             {/* Empty favorites list placeholder */}
           </div>
 
-          {/* Projects */}
+          {/* Spaces */}
           <div className="mt-2">
             <Spaces />
           </div>

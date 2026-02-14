@@ -206,7 +206,7 @@ export const SpacesListClient = () => {
 
       <div className="flex-1 border rounded-lg bg-white shadow-sm">
         <div className="p-4">
-          {/* Active Projects Section */}
+          {/* Active Spaces Section */}
           <div className="mb-6">
             <button
               onClick={() => setActiveExpanded(!activeExpanded)}

@@ -3,6 +3,7 @@ from fastapi import APIRouter
 # Import all route modules
 from . import auth
 from . import workspaces
+from . import spaces
 from . import tasks
 from . import epics
 from . import sprints
@@ -13,6 +14,7 @@ from . import integration
 
 auth_router = auth.router
 workspaces_router = workspaces.router
+spaces_router = spaces.router
 tasks_router = tasks.router
 epics_router = epics.router
 sprints_router = sprints.router
@@ -27,6 +29,7 @@ api_router = APIRouter()
 # Include all routers
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(workspaces_router, tags=["Workspaces"])
+api_router.include_router(spaces_router, tags=["Spaces"])
 api_router.include_router(tasks_router, tags=["Tasks"])
 api_router.include_router(epics_router, tags=["Epics"])
 api_router.include_router(sprints_router, tags=["Sprints"])
