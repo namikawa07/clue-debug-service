@@ -23,10 +23,10 @@ export const EditTaskFormWrapper = ({
 
     const { data: initialValues, isLoading } = useGetTask({ taskId: id });
 
-    const { data: projects, isLoading: isLoadingProjects } = useGetSpaces({ workspaceId });
+    const { data: Spaces, isLoading: isLoadingSpaces } = useGetSpaces({ workspaceId });
     const { data: members, isLoading: isLoadingMembers } = useGetMembers({ workspaceId });
 
-    const projectOptions = projects?.documents.map((project) => ({
+    const projectOptions = Spaces?.documents.map((project) => ({
         id: project.id,
         name: project.name,
         imageUrl: project.imageUrl || project.image_url || ''
@@ -38,7 +38,7 @@ export const EditTaskFormWrapper = ({
         avatarColor: member.avatarColor || member.avatar_color,
     })) || [];
 
-    const loading = isLoading || isLoadingProjects || isLoadingMembers;
+    const loading = isLoading || isLoadingSpaces || isLoadingMembers;
 
     if (loading) {
         return (

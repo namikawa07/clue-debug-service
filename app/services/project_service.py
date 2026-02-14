@@ -5,7 +5,7 @@ from ....models.project import Project
 from ....schemas.project import ProjectCreate, ProjectUpdate
 
 
-class ProjectService:
+class Spaceservice:
     def __init__(self, db: AsyncSession):
         self.db = db
 

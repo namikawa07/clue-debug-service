@@ -263,7 +263,7 @@ export const SpacesListClient = () => {
             )}
           </div>
 
-          {/* Closed Projects Section */}
+          {/* Closed Spaces Section */}
           {closedSpaces.length > 0 && (
             <div>
               <button

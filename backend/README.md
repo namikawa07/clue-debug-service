@@ -7,7 +7,7 @@ Phase 1 backend implementation for FinePro AI - AI-powered project management pl
 ### ✅ Completed
 - **FastAPI Application**: Modern async API framework with CORS support
 - **PostgreSQL Integration**: Async SQLAlchemy 2.0 with asyncpg driver
-- **Database Models**: Complete SQLAlchemy models for Users, Workspaces, Projects, Epics, Tasks, Sprints, Comments, Activity Logs
+- **Database Models**: Complete SQLAlchemy models for Users, Workspaces, Spaces, Epics, Tasks, Sprints, Comments, Activity Logs
 - **Authentication System**: JWT token management with Supabase integration
 - **API Endpoints**:
   - Authentication: `/api/v1/auth/verify`, `/api/v1/auth/exchange`, `/api/v1/auth/refresh`, `/api/v1/auth/me`
@@ -170,8 +170,8 @@ pytest --cov=app --cov-report=html
 ### Core Models
 - **User**: User accounts with Supabase integration
 - **Workspace**: Project workspaces with member management
-- **Project**: Individual projects within workspaces
-- **Epic**: Large features within projects
+- **Project**: Individual Spaces within workspaces
+- **Epic**: Large features within Spaces
 - **Task**: Specific tasks with assignments and status
 - **Sprint**: Time-boxed work periods
 - **Member**: Workspace membership with roles

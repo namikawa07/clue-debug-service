@@ -28,7 +28,7 @@ export const TaskIdClient = () => {
                 $id: "unknown",
                 $createdAt: "",
                 $updatedAt: "",
-                $collectionId: "projects",
+                $collectionId: "Spaces",
                 $databaseId: "finepro",
                 $permissions: [],
                 name: "Unknown Space",

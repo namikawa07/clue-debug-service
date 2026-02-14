@@ -93,7 +93,7 @@ class WorkspaceService:
     
     async def delete(self, workspace_id: str) -> bool:
         """Delete a workspace"""
-        # Note: cascading deletes should handle members, projects, etc.
+        # Note: cascading deletes should handle members, Spaces, etc.
         result = await self.db.execute(
             delete(Workspace).where(Workspace.id == workspace_id)
         )

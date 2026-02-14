@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { Task } from "@/features/tasks/types";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { useGetProjects } from "@/features/projects/api/use-get-projects";
+import { useGetSpaces } from "@/features/spaces/api/use-get-spaces";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCreateTaskModel } from "@/features/tasks/hooks/use-create-task-modal";
-import { useCreateProjectModel } from "@/features/projects/hooks/use-create-project-modal";
+import { useCreateSpaceModal } from "@/features/spaces/hooks/use-create-space-modal";
 import { useGetWorkspaceAnalytics } from "@/features/workspaces/api/use-get-workspace-analytics";
 
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,8 @@ import { PageError } from "@/components/page-error";
 import { PageLoader } from "@/components/page-loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { DottedSeparator } from "@/components/dotted-separator";
-import { Project } from "@/features/projects/types";
-import { ProjectAvatar } from "@/features/projects/components/project-avatar";
+import { Space } from "@/features/spaces/types";
+import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { Member } from "@/features/members/types";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { ActivityFeed } from "@/components/activity";
@@ -39,7 +39,7 @@ export const WorkspaceIdClient = () => {
   const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
     workspaceId,
   });
-  const { data: projects, isLoading: isLoadingProjects } = useGetProjects({
+  const { data: spaces, isLoading: isLoadingSpaces } = useGetSpaces({
     workspaceId,
   });
   const { data: members, isLoading: isLoadingMembers } = useGetMembers({
@@ -49,14 +49,14 @@ export const WorkspaceIdClient = () => {
   const isLoading =
     isLoadingAnalytics ||
     isLoadingTasks ||
-    isLoadingProjects ||
+    isLoadingSpaces ||
     isLoadingMembers;
 
   if (isLoading) {
     return <PageLoader />;
   }
 
-  if (!analytics || !tasks || !projects || !members) {
+  if (!analytics || !tasks || !spaces || !members) {
     return <PageError message="Failed to load workspace data" />;
   }
 
@@ -64,7 +64,7 @@ export const WorkspaceIdClient = () => {
     <div className="h-full flex flex-col space-y-4">
       <Analytics data={analytics} />
 
-      {/* Three column layout: Tasks | Projects + Members | Activity + Presence */}
+      {/* Three column layout: Tasks | Spaces + Members | Activity + Presence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Left Column: Tasks */}
         <div className="xl:col-span-1">
@@ -77,17 +77,17 @@ export const WorkspaceIdClient = () => {
           />
         </div>
 
-        {/* Middle Column: Projects + Members */}
+        {/* Middle Column: Spaces + Members */}
         <div className="xl:col-span-1 space-y-4">
-          <ProjectList
-            data={projects.documents.map((project: any) => ({
-              $id: project.id,
-              name: project.name,
-              imageUrl: project.image_url,
-              workspaceId: project.workspace_id,
-              $createdAt: project.created_at,
+          <SpaceList
+            data={spaces.documents.map((space: any) => ({
+              ...space, // Use spread to capture all props including id/$id
+              $id: space.id || space.$id,
+              // Map legacy fields if needed, but 'types.ts' for Space has `id`, `name`, `workspaceId`.
+              // We should ensure we map correctly.
+              // useGetSpaces returns Space[] which has id, name, imageUrl.
             })) as any}
-            total={projects.documents.length}
+            total={spaces.total}
           />
           <MembersList data={members.documents} total={members.total} />
         </div>
@@ -141,7 +141,8 @@ export const TaskList = ({ data, total }: TaskListProps) => {
                   <CardContent className="p-4">
                     <p className="text-lg font-medium truncate">{task.name}</p>
                     <div className="flex items-center gap-x-2">
-                      <p>{task.project?.name}</p>
+                      {/* task.project?.name -> task.space?.name or we might need to update Task type */}
+                      <p>{task.spaceId || "Space"}</p>
                       <div className="size-1 rounded-full bg-neutral-300" />
                       <div className="text-sm text-muted-foreground flex items-center">
                         <CalendarIcon className="size-3 mr-1" />
@@ -167,43 +168,43 @@ export const TaskList = ({ data, total }: TaskListProps) => {
   );
 };
 
-interface ProjectListProps {
-  data: Project[];
+interface SpaceListProps {
+  data: Space[];
   total: number;
 }
 
-export const ProjectList = ({ data, total }: ProjectListProps) => {
+export const SpaceList = ({ data, total }: SpaceListProps) => {
   const workspaceId = useWorkspaceId();
-  const { open: createProject } = useCreateProjectModel();
+  const { open: createSpace } = useCreateSpaceModal();
   const recentlyUpdated = useRecentlyUpdated();
 
   return (
     <div className="flex flex-col gap-y-4 col-span-1">
       <div className="bg-white border rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Projects ({total})</p>
-          <Button variant="secondary" size="icon" onClick={createProject}>
+          <p className="text-lg font-semibold">Spaces ({total})</p>
+          <Button variant="secondary" size="icon" onClick={createSpace}>
             <PlusIcon className="size-4 text-neutral-400" />
           </Button>
         </div>
         <DottedSeparator className="my-4" />
         <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.map((project) => (
-            <li key={project.$id}>
-              <Link href={`/workspaces/${workspaceId}/projects/${project.$id}`}>
+          {data.map((space) => (
+            <li key={space.$id || space.id}>
+              <Link href={`/workspaces/${workspaceId}/spaces/${space.$id || space.id}`}>
                 <Card className={cn(
                   "shadow-none rounded-lg hover:opacity-75 transition duration-500",
-                  recentlyUpdated.has(project.$id) && "ring-2 ring-blue-500 ring-offset-2 animate-pulse"
+                  recentlyUpdated.has(space.$id || space.id) && "ring-2 ring-blue-500 ring-offset-2 animate-pulse"
                 )}>
                   <CardContent className="p-4 flex items-center gap-x-2.5">
-                    <ProjectAvatar
+                    <SpaceAvatar
                       className="size-12"
                       fallbackClassName="text-lg"
-                      name={project.name}
-                      image={project.imageUrl}
+                      name={space.name}
+                      image={space.imageUrl}
                     />
                     <p className="text-lg font-medium truncate">
-                      {project.name}
+                      {space.name}
                     </p>
                   </CardContent>
                 </Card>
@@ -211,7 +212,7 @@ export const ProjectList = ({ data, total }: ProjectListProps) => {
             </li>
           ))}
           <li className="text-sm text-muted-foreground text-center hidden first-of-type:block">
-            No projects found
+            No Spaces found
           </li>
         </ul>
       </div>

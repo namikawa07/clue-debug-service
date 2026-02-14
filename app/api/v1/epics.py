@@ -13,12 +13,12 @@ from app.models.user import User
 
 router = APIRouter()
 
-@router.get("/projects/{project_id}/epics", response_model=List[EpicResponse])
+@router.get("/Spaces/{project_id}/epics", response_model=List[EpicResponse])
 async def list_epics_in_project(project_id: UUID, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     svc = EpicService(db)
     return await svc.get_by_project(project_id)
 
-@router.post("/projects/{project_id}/epics", response_model=EpicResponse, status_code=201)
+@router.post("/Spaces/{project_id}/epics", response_model=EpicResponse, status_code=201)
 async def create_epic_in_project(project_id: UUID, epic_in: EpicCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     svc = EpicService(db)
     epic = await svc.create(project_id, epic_in)

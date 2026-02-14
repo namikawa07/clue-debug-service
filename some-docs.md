@@ -199,7 +199,7 @@ flowchart TD
     end
     
     subgraph "Storage Layer"
-        DB_PROJECTS[(Projects)]
+        DB_Spaces[(Spaces)]
         DB_TASKS[(Tasks)]
         DB_TEAM[(Team & Assignments)]
         DB_ACTIVITY[(Activity Log)]
@@ -217,11 +217,11 @@ flowchart TD
     VALIDATOR --> AI_ENGINE
     AI_INPUT --> AI_ENGINE
     
-    AI_ENGINE --> DB_PROJECTS
+    AI_ENGINE --> DB_Spaces
     AI_ENGINE --> DB_TASKS
     AI_ENGINE --> DB_TEAM
     
-    DB_PROJECTS --> DB_ACTIVITY
+    DB_Spaces --> DB_ACTIVITY
     DB_TASKS --> DB_ACTIVITY
     DB_TEAM --> DB_ACTIVITY
     
@@ -326,19 +326,19 @@ graph TB
     subgraph "Workspace 1: Startup A"
         WS1_WEB[Web Platform]
         WS1_WA[WhatsApp Group 1]
-        WS1_PROJ[Projects: 5]
+        WS1_PROJ[Spaces: 5]
     end
     
     subgraph "Workspace 2: Freelance"
         WS2_WEB[Web Platform]
         WS2_WA[WhatsApp Group 2]
-        WS2_PROJ[Projects: 3]
+        WS2_PROJ[Spaces: 3]
     end
     
     subgraph "Workspace 3: Side Project"
         WS3_WEB[Web Platform]
         WS3_WA[WhatsApp Group 3]
-        WS3_PROJ[Projects: 2]
+        WS3_PROJ[Spaces: 2]
     end
     
     USER --> WS1_WEB
@@ -490,7 +490,7 @@ These diagrams illustrate:
 6. **Command Ecosystem**: WhatsApp bot capabilities
 7. **User Journey**: Traditional vs AI-powered workflow
 8. **Real-time Sync**: WebSocket + WhatsApp notifications
-9. **Multi-workspace**: Managing multiple projects/teams
+9. **Multi-workspace**: Managing multiple Spaces/teams
 10. **AI Orchestration**: Agent coordination
 11. **Smart Notifications**: Intelligent filtering
 12. **Deployment**: Production infrastructure

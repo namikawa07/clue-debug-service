@@ -23,7 +23,7 @@ class WebSocketEventListeners:
     
     def __init__(self):
         self.active_tasks: Dict[str, Dict[str, Any]] = {}  # task_id -> task_data
-        self.active_projects: Dict[str, Dict[str, Any]] = {}  # project_id -> project_data
+        self.active_Spaces: Dict[str, Dict[str, Any]] = {}  # project_id -> project_data
         self.due_date_check_interval = timedelta(hours=1)  # Check every hour
         self.daily_summary_time = "09:00"  # Send daily summary at 9 AM
         

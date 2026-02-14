@@ -13,7 +13,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(String(10), primary_key=True, default=generate_task_id)
-    space_id = Column(String(12), ForeignKey("spaces.id"), nullable=True) # Should technically be nullable=False eventually, but for migration safety/existing data we might need care. However user said "we dont have projects", implying fresh start or hard cut. Let's make it nullable=True for now to avoid immediate insert errors if we don't cascade delete immediately, OR user intention is to map existing. Actually, let's make it nullable=True for flexibility during migration, or check `create_task`. The user said "remove unwanted files... update almechi". I will stick to nullable=True for safety unless strictness is required.
+    space_id = Column(String(12), ForeignKey("spaces.id"), nullable=True) # Should technically be nullable=False eventually, but for migration safety/existing data we might need care. However user said "we dont have Spaces", implying fresh start or hard cut. Let's make it nullable=True for now to avoid immediate insert errors if we don't cascade delete immediately, OR user intention is to map existing. Actually, let's make it nullable=True for flexibility during migration, or check `create_task`. The user said "remove unwanted files... update almechi". I will stick to nullable=True for safety unless strictness is required.
     # WAIT, strict schema is better. But I don't set default.
     # Let's check `epic_id`. It's nullable.
     # Let's add space_id.

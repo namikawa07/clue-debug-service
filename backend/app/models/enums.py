@@ -28,7 +28,7 @@ class SpaceStatus(str, enum.Enum):
 
 
 # Backward compat alias
-ProjectStatus = SpaceStatus
+Spacestatus = SpaceStatus
 
 
 class EpicStatus(str, enum.Enum):

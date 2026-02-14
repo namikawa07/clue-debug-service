@@ -18,7 +18,7 @@ export const CreateWorkspaceStep = ({ onComplete }: CreateWorkspaceStepProps) =>
                     Create Your First Workspace
                 </CardTitle>
                 <CardDescription className="text-sm md:text-base text-gray-600 mt-2">
-                    Get started by creating a workspace for your projects and tasks
+                    Get started by creating a workspace for your Spaces and tasks
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-6 md:p-7 pt-4">

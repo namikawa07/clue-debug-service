@@ -24,7 +24,7 @@ graph TB
     
     subgraph Services["Services Layer"]
         TaskS[Task Service]
-        ProjectS[Project Service]
+        Spaces[Project Service]
         WorkspaceS[Workspace Service]
         UserS[User Service]
         NotificationS[Notification Service]
@@ -63,7 +63,7 @@ graph TB
     RealtimeC --> WSS
     REST --> AuthS
     REST --> TaskS
-    REST --> ProjectS
+    REST --> Spaces
     REST --> WorkspaceS
     REST --> UserS
     
@@ -73,7 +73,7 @@ graph TB
     WSS --> AFS
     
     TaskS --> RT
-    ProjectS --> RT
+    Spaces --> RT
     WorkspaceS --> RT
     UserS --> RT
     
@@ -83,7 +83,7 @@ graph TB
     AFS --> WSS
     
     TaskS --> PostgreSQL
-    ProjectS --> PostgreSQL
+    Spaces --> PostgreSQL
     WorkspaceS --> PostgreSQL
     UserS --> PostgreSQL
     
@@ -282,7 +282,7 @@ graph TB
 +-------------------------------------------------------------+
 |  users ---+-- members ---+-- workspaces                     |
 |           |               |    |                            |
-|           |               +----+-- projects                 |
+|           |               +----+-- Spaces                 |
 |           |                      |    |                     |
 |           |                      +----+-- epics             |
 |           |                             |    |              |
@@ -302,8 +302,8 @@ graph TB
 |-------|-------------|
 | users | User accounts and profiles |
 | workspaces | Project workspaces with invite codes |
-| projects | Individual projects within workspaces |
-| epics | Large features within projects |
+| Spaces | Individual Spaces within workspaces |
+| epics | Large features within Spaces |
 | tasks | Specific tasks with assignments and status |
 | sprints | Time-boxed work periods |
 | members | Workspace membership with roles (owner/admin/member) |
@@ -327,7 +327,7 @@ FinePro implements Row Level Security (RLS) at the database level to ensure data
 | users | Own Update | Users can update only their own profile |
 | workspaces | Member View | View workspaces where user is a member |
 | workspaces | Owner Manage | Owners can update/delete their workspaces |
-| projects | Workspace Access | CRUD based on workspace membership |
+| Spaces | Workspace Access | CRUD based on workspace membership |
 | tasks | Workspace Access | CRUD based on workspace membership |
 | epics | Workspace Access | CRUD based on workspace membership |
 | members | Role-Based | Owners/Admins can manage members |

@@ -11,7 +11,7 @@ import { useConnectionStatus } from "@/contexts/realtime-context";
 
 const pathnameMap = {
     "tasks": "Tasks",
-    "projects": "Projects",
+    "Spaces": "Spaces",
     "activity": "Inbox",
     "members": "Teams"
 } as const;

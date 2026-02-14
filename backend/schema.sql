@@ -106,7 +106,7 @@ CREATE TYPE "public"."priority" AS ENUM (
 ALTER TYPE "public"."priority" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."projectstatus" AS ENUM (
+CREATE TYPE "public"."Spacestatus" AS ENUM (
     'PLANNING',
     'ACTIVE',
     'PAUSED',
@@ -114,7 +114,7 @@ CREATE TYPE "public"."projectstatus" AS ENUM (
 );
 
 
-ALTER TYPE "public"."projectstatus" OWNER TO "postgres";
+ALTER TYPE "public"."Spacestatus" OWNER TO "postgres";
 
 
 CREATE TYPE "public"."sprintstatus" AS ENUM (
@@ -232,13 +232,13 @@ CREATE TABLE IF NOT EXISTS "public"."members" (
 ALTER TABLE "public"."members" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."projects" (
+CREATE TABLE IF NOT EXISTS "public"."Spaces" (
     "id" "uuid" NOT NULL,
     "workspace_id" "uuid" NOT NULL,
     "name" character varying(255) NOT NULL,
     "description" "text",
     "tech_stack" json,
-    "status" "public"."projectstatus",
+    "status" "public"."Spacestatus",
     "ai_generated" boolean,
     "complexity_score" double precision,
     "start_date" timestamp with time zone,
@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
 );
 
 
-ALTER TABLE "public"."projects" OWNER TO "postgres";
+ALTER TABLE "public"."Spaces" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."sprint_task_details" (
@@ -381,8 +381,8 @@ ALTER TABLE ONLY "public"."members"
 
 
 
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."Spaces"
+    ADD CONSTRAINT "Spaces_pkey" PRIMARY KEY ("id");
 
 
 
@@ -448,7 +448,7 @@ ALTER TABLE ONLY "public"."comments"
 
 
 ALTER TABLE ONLY "public"."epics"
-    ADD CONSTRAINT "epics_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id");
+    ADD CONSTRAINT "epics_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."Spaces"("id");
 
 
 
@@ -462,13 +462,13 @@ ALTER TABLE ONLY "public"."members"
 
 
 
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "projects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id");
+ALTER TABLE ONLY "public"."Spaces"
+    ADD CONSTRAINT "Spaces_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id");
 
 
 
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "projects_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id");
+ALTER TABLE ONLY "public"."Spaces"
+    ADD CONSTRAINT "Spaces_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id");
 
 
 
@@ -483,7 +483,7 @@ ALTER TABLE ONLY "public"."sprint_task_details"
 
 
 ALTER TABLE ONLY "public"."sprints"
-    ADD CONSTRAINT "sprints_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id");
+    ADD CONSTRAINT "sprints_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."Spaces"("id");
 
 
 
@@ -724,9 +724,9 @@ GRANT ALL ON TABLE "public"."members" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."projects" TO "anon";
-GRANT ALL ON TABLE "public"."projects" TO "authenticated";
-GRANT ALL ON TABLE "public"."projects" TO "service_role";
+GRANT ALL ON TABLE "public"."Spaces" TO "anon";
+GRANT ALL ON TABLE "public"."Spaces" TO "authenticated";
+GRANT ALL ON TABLE "public"."Spaces" TO "service_role";
 
 
 

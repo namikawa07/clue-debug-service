@@ -16,7 +16,7 @@ class SupabaseRealtimeManager {
     onMemberChange?: (payload: any) => void
   }) {
     const channelName = `workspace-${workspaceId}`
-    
+
     if (this.channels.has(channelName)) {
       return this.channels.get(channelName)!
     }
@@ -38,7 +38,7 @@ class SupabaseRealtimeManager {
         {
           event: '*',
           schema: 'public',
-          table: 'projects',
+          table: 'Spaces',
           filter: `workspace_id=eq.${workspaceId}`
         },
         (payload) => callbacks.onProjectChange?.(payload)
@@ -66,7 +66,7 @@ class SupabaseRealtimeManager {
     onProjectChange?: (payload: any) => void
   }) {
     const channelName = `project-${projectId}`
-    
+
     if (this.channels.has(channelName)) {
       return this.channels.get(channelName)!
     }
@@ -98,7 +98,7 @@ class SupabaseRealtimeManager {
         {
           event: '*',
           schema: 'public',
-          table: 'projects',
+          table: 'Spaces',
           filter: `id=eq.${projectId}`
         },
         (payload) => callbacks.onProjectChange?.(payload)

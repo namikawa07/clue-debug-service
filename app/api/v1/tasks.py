@@ -13,13 +13,13 @@ from ....models import User
 router = APIRouter()
 
 
-@router.get("/projects/{project_id}/tasks", response_model=List[TaskResponse])
+@router.get("/Spaces/{project_id}/tasks", response_model=List[TaskResponse])
 async def list_tasks(project_id: UUID, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     svc = TaskService(db)
     return await svc.get_by_project(project_id)
 
 
-@router.post("/projects/{project_id}/tasks", response_model=TaskResponse, status_code=201)
+@router.post("/Spaces/{project_id}/tasks", response_model=TaskResponse, status_code=201)
 async def create_task(project_id: UUID, task_in: TaskCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     svc = TaskService(db)
     t = await svc.create(project_id, task_in, user.id)

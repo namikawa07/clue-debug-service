@@ -8,7 +8,7 @@ async def apply_fixes():
         
         # 1. Add project_id to tasks if it doesn't exist
         try:
-            await db.execute(text("ALTER TABLE tasks ADD COLUMN project_id VARCHAR(12) REFERENCES projects(id)"))
+            await db.execute(text("ALTER TABLE tasks ADD COLUMN project_id VARCHAR(12) REFERENCES Spaces(id)"))
             print("- Added project_id to tasks table")
         except Exception as e:
             if "already exists" in str(e):
