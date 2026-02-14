@@ -11,6 +11,7 @@ from . import websocket
 from . import members
 from . import notifications
 from . import integration
+from . import teams
 
 auth_router = auth.router
 workspaces_router = workspaces.router
@@ -22,6 +23,7 @@ websocket_router = websocket.router
 members_router = members.router
 notifications_router = notifications.router
 integration_router = integration.router
+teams_router = teams.router
 
 # Create main API router
 api_router = APIRouter()
@@ -37,3 +39,4 @@ api_router.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 api_router.include_router(members_router, tags=["Members"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(integration_router, prefix="/integration", tags=["Real-time Integration"])
+api_router.include_router(teams_router, tags=["Teams"])

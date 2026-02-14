@@ -7,13 +7,15 @@ from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.user import User
-from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse, WorkspaceCreateRequest
+from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse, WorkspaceCreateRequest, MemberUpdate, MemberResponse
+from app.schemas.join_request import JoinRequestResponse
 from app.services.workspace_service import WorkspaceService
 from app.services.activity_service import ActivityService
 from app.services.member_service import MemberService
 from app.services.task_service import TaskService
-from app.models.enums import ActionType, EntityType, TaskStatus, Priority
+from app.models.enums import ActionType, EntityType, TaskStatus, Priority, MemberRole
 from app.schemas.task import TaskResponse
+from typing import List, Optional, Any
 
 router = APIRouter()
 
@@ -247,3 +249,86 @@ async def reset_invite_code(
         raise HTTPException(status_code=404, detail="Workspace not found")
         
     return workspace
+
+
+@router.get("/workspaces/{workspace_id}/join-requests", response_model=List[JoinRequestResponse])
+async def list_join_requests(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List pending join requests (Admin only)"""
+    service = WorkspaceService(db)
+    member_service = MemberService(db)
+    
+    if not await member_service.is_admin(current_user.id, workspace_id):
+        raise HTTPException(status_code=403, detail="Admin permissions required")
+        
+    return await service.get_join_requests(workspace_id)
+
+
+@router.post("/workspaces/{workspace_id}/join-requests/{request_id}/resolve")
+async def resolve_join_request(
+    workspace_id: str,
+    request_id: str,
+    approved: bool = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Approve or reject a join request (Admin only)"""
+    service = WorkspaceService(db)
+    member_service = MemberService(db)
+    
+    if not await member_service.is_admin(current_user.id, workspace_id):
+        raise HTTPException(status_code=403, detail="Admin permissions required")
+        
+    success = await service.resolve_join_request(request_id, approved)
+    if not success:
+        raise HTTPException(status_code=404, detail="Join request not found")
+        
+    return {"status": "success"}
+
+
+@router.delete("/workspaces/{workspace_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+    workspace_id: str,
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Remove a member from the workspace (Admin only)"""
+    service = WorkspaceService(db)
+    member_service = MemberService(db)
+    
+    if not await member_service.is_admin(current_user.id, workspace_id):
+        raise HTTPException(status_code=403, detail="Admin permissions required")
+        
+    success = await service.remove_member(workspace_id, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Member not found")
+        
+    return None
+
+
+@router.patch("/workspaces/{workspace_id}/members/{user_id}", response_model=MemberResponse)
+async def update_member_role(
+    workspace_id: str,
+    user_id: str,
+    role_data: MemberUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a member's role (Admin only)"""
+    service = WorkspaceService(db)
+    member_service = MemberService(db)
+    
+    if not await member_service.is_admin(current_user.id, workspace_id):
+        raise HTTPException(status_code=403, detail="Admin permissions required")
+        
+    success = await service.update_member_role(workspace_id, user_id, role_data.role)
+    if not success:
+        raise HTTPException(status_code=404, detail="Member not found")
+        
+    # Get updated member
+    member = await member_service.get_membership(user_id, workspace_id)
+    return member

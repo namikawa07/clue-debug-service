@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { Member } from "../types";
+import { api } from "@/lib/api";
+import { Member, MemberRole } from "../types";
 
 interface useGetMembersProps {
     workspaceId: string;
@@ -12,20 +12,10 @@ export const useGetMembers = ({
     const query = useQuery({
         queryKey: ["members", workspaceId],
         queryFn: async () => {
-            const { data: members, error } = await supabase
-                .from('members')
-                .select(`
-                    *,
-                    user:users(name, email)
-                `)
-                .eq('workspace_id', workspaceId);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            const response = await api.get<any[]>(`/workspaces/${workspaceId}/members`);
 
             // Map to frontend format
-            const documents = members.map((m: any) => ({
+            const documents = response.map((m: any) => ({
                 id: m.id,
                 $id: m.id,
                 created_at: m.joined_at,
@@ -36,15 +26,18 @@ export const useGetMembers = ({
                 $databaseId: "finepro",
                 $permissions: [],
 
+                workspace_id: m.workspace_id,
+                user_id: m.user_id,
                 workspaceId: m.workspace_id,
                 userId: m.user_id,
-                role: m.role,
+                role: m.role.toUpperCase() as MemberRole,
                 name: m.user?.name || "Unknown",
                 email: m.user?.email || "",
-            })) as any;
+                avatarColor: { bg: "#f3f4f6", text: "#374151" } // Default
+            }));
 
             return {
-                documents: documents as any,
+                documents: documents,
                 total: documents.length,
             };
         }

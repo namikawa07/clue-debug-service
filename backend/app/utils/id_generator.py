@@ -50,6 +50,17 @@ def generate_comment_id() -> str:
     """Generate comment ID"""
     return generate_short_id(12)
 
+def generate_nanoid(prefix: str, length: int = 8) -> str:
+    """Generate a prefixed ID like tea_xxxx"""
+    suffix = generate_short_id(length)
+    return f"{prefix}_{suffix}"
+
+def generate_team_id():
+    return generate_nanoid(prefix="tea", length=8)
+
+def generate_request_id():
+    return generate_nanoid(prefix="req", length=8)
+
 def generate_invite_code() -> str:
     """Generate workspace invite code"""
     characters = string.ascii_uppercase + string.digits

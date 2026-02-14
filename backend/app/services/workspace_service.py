@@ -6,7 +6,7 @@ import string
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from app.models.workspace import Workspace
 from app.models.member import Member
@@ -201,3 +201,81 @@ class WorkspaceService:
     def _generate_invite_code(self, length: int = 6) -> str:
         """Generate a random alphanumeric invite code"""
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+    async def get_join_requests(self, workspace_id: str) -> List[Any]:
+        """Get pending join requests for a workspace"""
+        from app.models.join_request import JoinRequest
+        from app.models.enums import JoinRequestStatus
+        result = await self.db.execute(
+            select(JoinRequest)
+            .options(selectinload(JoinRequest.user))
+            .where(JoinRequest.workspace_id == workspace_id, JoinRequest.status == JoinRequestStatus.PENDING)
+            .order_by(JoinRequest.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def create_join_request(self, workspace_id: str, user_id: str) -> Any:
+        """Create a new join request"""
+        from app.models.join_request import JoinRequest
+        from app.models.enums import JoinRequestStatus
+        
+        # Check if exists
+        result = await self.db.execute(
+            select(JoinRequest).where(JoinRequest.workspace_id == workspace_id, JoinRequest.user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            if existing.status == JoinRequestStatus.REJECTED:
+                existing.status = JoinRequestStatus.PENDING # Re-request
+                await self.db.commit()
+                return existing
+            return existing
+            
+        request = JoinRequest(workspace_id=workspace_id, user_id=user_id)
+        self.db.add(request)
+        await self.db.commit()
+        await self.db.refresh(request)
+        return request
+
+    async def resolve_join_request(self, request_id: str, approved: bool) -> bool:
+        """Approve or reject a join request"""
+        from app.models.join_request import JoinRequest
+        from app.models.enums import JoinRequestStatus
+        
+        result = await self.db.execute(select(JoinRequest).where(JoinRequest.id == request_id))
+        request = result.scalar_one_or_none()
+        if not request:
+            return False
+            
+        if approved:
+            request.status = JoinRequestStatus.APPROVED
+            # Automatically add as member
+            member = Member(workspace_id=request.workspace_id, user_id=request.user_id, role=MemberRole.MEMBER)
+            self.db.add(member)
+        else:
+            request.status = JoinRequestStatus.REJECTED
+            
+        await self.db.commit()
+        return True
+
+    async def remove_member(self, workspace_id: str, user_id: str) -> bool:
+        """Remove a member from the workspace"""
+        result = await self.db.execute(
+            delete(Member).where(Member.workspace_id == workspace_id, Member.user_id == user_id)
+        )
+        await self.db.commit()
+        return result.rowcount > 0
+
+    async def update_member_role(self, workspace_id: str, user_id: str, role: MemberRole) -> bool:
+        """Update a member's role"""
+        from sqlalchemy import and_
+        result = await self.db.execute(
+            select(Member).where(and_(Member.workspace_id == workspace_id, Member.user_id == user_id))
+        )
+        member = result.scalar_one_or_none()
+        if not member:
+            return False
+            
+        member.role = role
+        await self.db.commit()
+        return True

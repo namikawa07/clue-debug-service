@@ -4,6 +4,8 @@ Centralized model exports
 from .user import User
 from .workspace import Workspace
 from .member import Member
+from .team import Team
+from .join_request import JoinRequest
 from .space import Space
 from .epic import Epic
 from .task import Task
@@ -16,6 +18,8 @@ __all__ = [
     "User",
     "Workspace",
     "Member",
+    "Team",
+    "JoinRequest",
     "Space",
     "Epic",
     "Task",

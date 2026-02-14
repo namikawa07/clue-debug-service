@@ -76,3 +76,9 @@ class EntityType(str, enum.Enum):
     PROJECT = "project"  # backward compat
     WORKSPACE = "workspace"
     USER = "user"
+
+
+class JoinRequestStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"

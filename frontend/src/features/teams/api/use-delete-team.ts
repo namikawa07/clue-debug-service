@@ -1,34 +1,34 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
-import { rpc } from "@/lib/rpc";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
-type ResponseType = InferResponseType<typeof rpc.api.teams[":teamId"]["$delete"], 200>;
-type RequestType = InferRequestType<typeof rpc.api.teams[":teamId"]["$delete"]>;
+interface DeleteTeamRequest {
+  param: {
+    teamId: string;
+  };
+}
 
 export const useDeleteTeam = () => {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation<ResponseType, Error, RequestType>({
+  const mutation = useMutation<
+    { data: any },
+    Error,
+    DeleteTeamRequest
+  >({
     mutationFn: async ({ param }) => {
-      const response = await rpc.api.teams[":teamId"]["$delete"]({ param });
+      await api.delete<any>(`/teams/${param.teamId}`);
 
-      if (!response.ok) {
-        throw new Error("Failed to delete team");
-      }
-
-      return await response.json();
+      return { data: { id: param.teamId } };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       toast.success("Team deleted");
       queryClient.invalidateQueries({ queryKey: ["teams"] });
-      queryClient.invalidateQueries({ queryKey: ["team", variables.param.teamId] });
     },
     onError: () => {
       toast.error("Failed to delete team");
-    },
+    }
   });
 
   return mutation;
 };
-

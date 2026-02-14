@@ -1,33 +1,38 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
-import { rpc } from "@/lib/rpc";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
-type ResponseType = InferResponseType<typeof rpc.api.teams.$post, 200>;
-type RequestType = InferRequestType<typeof rpc.api.teams.$post>;
+interface CreateTeamRequest {
+  workspaceId: string;
+  name: string;
+  description?: string;
+}
 
 export const useCreateTeam = () => {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation<ResponseType, Error, RequestType>({
-    mutationFn: async ({ json }) => {
-      const response = await rpc.api.teams.$post({ json });
+  const mutation = useMutation<
+    { data: any },
+    Error,
+    CreateTeamRequest
+  >({
+    mutationFn: async ({ workspaceId, name, description }) => {
+      const response = await api.post<any>(`/workspaces/${workspaceId}/teams`, {
+        name,
+        description,
+        workspace_id: workspaceId
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to create team");
-      }
-
-      return await response.json();
+      return { data: response };
     },
-    onSuccess: (res) => {
+    onSuccess: (_, { workspaceId }) => {
       toast.success("Team created");
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ["teams", workspaceId] });
     },
     onError: () => {
       toast.error("Failed to create team");
-    },
+    }
   });
 
   return mutation;
 };
-

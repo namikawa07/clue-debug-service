@@ -1,12 +1,13 @@
-import { Models } from "node-appwrite";
-
-export type Space = Models.Document & {
-    name: string;
-    workspaceId: string;
-    imageUrl?: string;
-    teamId?: string;
-    // Legacy support for Appwrite document fields
+export type Space = {
     id: string;
+    name: string;
+    description?: string;
+    workspace_id: string;
+    imageUrl?: string;
+    image_url?: string;
+    moderator_id?: string;
+    // Legacy support
+    workspaceId: string;
     $id: string;
     $createdAt: string;
     $updatedAt: string;
