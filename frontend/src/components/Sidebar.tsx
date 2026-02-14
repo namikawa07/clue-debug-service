@@ -34,10 +34,10 @@ export const Sidebar = () => {
   const avatarInitial = displayName.charAt(0).toUpperCase();
   const userEmail = user?.email || "user@example.com";
 
-  // Navigation Items matching the snippet
+  // Navigation Items matching Admin scope
   const navItems = [
     { label: "Dashboard", href: `/workspaces/${workspaceId}`, icon: LayoutGrid },
-    { label: "Inbox", href: `/workspaces/${workspaceId}/activity`, icon: LayoutList }, // Inbox -> Activity feed?
+    { label: "Inbox", href: `/workspaces/${workspaceId}/activity`, icon: LayoutList },
     { label: "Teams", href: `/workspaces/${workspaceId}/members`, icon: Users },
     { label: "Assigned to me", href: `/workspaces/${workspaceId}/tasks?assigneeId=${user?.$id}`, icon: Circle },
     { label: "Created by me", href: `/workspaces/${workspaceId}/tasks?creatorId=${user?.$id}`, icon: User },
@@ -93,14 +93,14 @@ export const Sidebar = () => {
             })}
           </div>
 
-          {/* Favorites - Hardcoded for UI match */}
+          {/* Favorites - Placeholder */}
           <div className="mb-2">
-            <div className="flex items-center justify-between px-3 py-2">
-              <div className="flex items-center gap-2 cursor-pointer hover:text-gray-900 text-gray-600 transition-colors">
+            <div className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md group">
+              <div className="flex items-center gap-2 text-gray-600 group-hover:text-gray-900 transition-colors">
                 <ChevronDown size={14} />
                 <span className="text-xs font-semibold">Favorites</span>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button className="text-gray-400 hover:text-gray-600 transition-colors opacity-0 group-hover:opacity-100">
                 <Plus size={14} />
               </button>
             </div>
@@ -112,6 +112,21 @@ export const Sidebar = () => {
             <Spaces />
           </div>
         </div>
+      </div>
+
+      {/* Settings Link (Admin Scope) */}
+      <div className="p-2 border-t border-gray-200">
+        <Link href={`/workspaces/${workspaceId}/settings`}>
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200",
+            isActiveRoute(`/workspaces/${workspaceId}/settings`)
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          )}>
+            <MoreHorizontal size={16} />
+            <span>Workspace Settings</span>
+          </div>
+        </Link>
       </div>
 
       {/* User Profile */}
