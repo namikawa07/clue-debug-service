@@ -108,7 +108,7 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Task Name</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter task name" />
+                      <Input {...field} value={field.value || ""} placeholder="Enter task name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -270,6 +270,7 @@ export const CreateTaskForm = ({
                         <Input
                           type="time"
                           {...field}
+                          value={field.value || ""}
                           placeholder="HH:mm"
                         />
                       </FormControl>
@@ -287,6 +288,7 @@ export const CreateTaskForm = ({
                         <Input
                           type="time"
                           {...field}
+                          value={field.value || ""}
                           placeholder="HH:mm"
                         />
                       </FormControl>

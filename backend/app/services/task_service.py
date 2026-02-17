@@ -249,7 +249,8 @@ class TaskService:
                 changes=update_data
             )
             
-        return task
+        # Return fully loaded task to avoid serialization errors during async lazy-loading
+        return await self.get_by_id(task.id)
     
     async def delete(self, task_id: str, user_id: str) -> bool:
         """Delete a task"""

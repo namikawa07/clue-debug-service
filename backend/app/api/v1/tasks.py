@@ -234,6 +234,11 @@ async def update_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] update_task failed: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/tasks/{task_id}/status", response_model=TaskResponse)
 async def change_task_status(
