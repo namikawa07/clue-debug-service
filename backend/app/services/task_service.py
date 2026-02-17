@@ -126,6 +126,10 @@ class TaskService:
 
         # Build task query with filters
         query = select(Task).where(Task.space_id == space_id)
+        query = query.options(
+            selectinload(Task.space),
+            selectinload(Task.assigned_user)
+        )
         
         # Or fall back to Epic based if migration isn't perfect, but let's assume direct space_id
         # Actually, for robustness, if space_id is null on task, we might want to check epic->space.

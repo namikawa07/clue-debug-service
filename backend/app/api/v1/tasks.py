@@ -38,17 +38,23 @@ async def list_tasks(
     """
     List all tasks in a space with advanced filtering.
     """
-    service = TaskService(db)
-    tasks = await service.get_by_space(
-        space_id=space_id,
-        status=status,
-        priority=priority,
-        assigned_to=assigned_to,
-        search=search,
-        skip=skip,
-        limit=limit
-    )
-    return tasks
+    try:
+        service = TaskService(db)
+        tasks = await service.get_by_space(
+            space_id=space_id,
+            status=status,
+            priority=priority,
+            assigned_to=assigned_to,
+            search=search,
+            skip=skip,
+            limit=limit
+        )
+        return tasks
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] list_tasks failed: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/spaces/{space_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)

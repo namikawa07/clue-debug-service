@@ -29,7 +29,7 @@ class TaskBase(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: Priority = Priority.MEDIUM
     story_points: Optional[int] = None
-    position: int = 0
+    position: Optional[int] = 0
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
@@ -83,7 +83,7 @@ class TaskResponse(TaskBase):
     space_id: Optional[str]
     assigned_to: Optional[str]
     created_by: str
-    actual_hours: float
+    actual_hours: Optional[float] = 0.0
     completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
