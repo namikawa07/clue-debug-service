@@ -58,9 +58,9 @@ class RealtimeIntegrationManager:
         
         # Test activity service
         try:
-            await activity_feed_service.get_project_feed("test-project-id", limit=1)
+            await activity_feed_service.get_project_feed("test-space-id", limit=1)
         except:
-            pass  # Expected to fail for non-existent project
+            pass  # Expected to fail for non-existent space
         
         # Test presence service
         try:
@@ -72,7 +72,7 @@ class RealtimeIntegrationManager:
         self,
         event_type: str,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -89,21 +89,21 @@ class RealtimeIntegrationManager:
         try:
             # Trigger appropriate handlers based on event type
             if event_type == "task_created":
-                await self._handle_task_created(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_task_created(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "task_updated":
-                await self._handle_task_updated(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_task_updated(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "task_deleted":
-                await self._handle_task_deleted(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_task_deleted(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "task_assigned":
-                await self._handle_task_assigned(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_task_assigned(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "status_changed":
-                await self._handle_status_changed(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_status_changed(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "comment_added":
-                await self._handle_comment_added(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_comment_added(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "user_viewing":
-                await self._handle_user_viewing(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_user_viewing(task_id, space_id, workspace_id, user_id, user_name, data)
             elif event_type == "user_typing":
-                await self._handle_user_typing(task_id, project_id, workspace_id, user_id, user_name, data)
+                await self._handle_user_typing(task_id, space_id, workspace_id, user_id, user_name, data)
             else:
                 logger.warning(f"Unknown task event type: {event_type}")
                 
@@ -113,7 +113,7 @@ class RealtimeIntegrationManager:
     async def _handle_task_created(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -124,7 +124,7 @@ class RealtimeIntegrationManager:
         await realtime_task_service.notify_task_updated(
             task_id=task_id,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             updated_by=user_id,
             changes={"action": "created", "task_data": data},
             old_task_data=None,
@@ -137,7 +137,7 @@ class RealtimeIntegrationManager:
             user_id=user_id,
             user_name=user_name,
             workspace_id=workspace_id,
-            project_id=project_id,
+            project_id=space_id,
             task_id=task_id,
             task_title=data.get("title", "Unknown Task"),
             changes={"created": True, "task_data": data}
@@ -149,7 +149,7 @@ class RealtimeIntegrationManager:
             await notification_service.notify_task_assigned(
                 task_id=task_id,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 assigned_to=assigned_to,
                 assigned_by=user_id,
                 task_title=data.get("title", "Unknown Task")
@@ -158,7 +158,7 @@ class RealtimeIntegrationManager:
     async def _handle_task_updated(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -171,7 +171,7 @@ class RealtimeIntegrationManager:
         await realtime_task_service.notify_task_updated(
             task_id=task_id,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             updated_by=user_id,
             changes=changes,
             old_task_data=data.get("old_data"),
@@ -184,7 +184,7 @@ class RealtimeIntegrationManager:
             user_id=user_id,
             user_name=user_name,
             workspace_id=workspace_id,
-            project_id=project_id,
+            project_id=space_id,
             task_id=task_id,
             task_title=data.get("title", "Unknown Task"),
             changes=changes
@@ -199,7 +199,7 @@ class RealtimeIntegrationManager:
                 await realtime_task_service.notify_task_assigned(
                     task_id=task_id,
                     workspace_id=workspace_id,
-                    project_id=project_id,
+                    space_id=space_id,
                     assigned_to=new_assignee,
                     assigned_by=user_id,
                     old_assignee=old_assignee
@@ -208,7 +208,7 @@ class RealtimeIntegrationManager:
                 await notification_service.notify_task_assigned(
                     task_id=task_id,
                     workspace_id=workspace_id,
-                    project_id=project_id,
+                    space_id=space_id,
                     assigned_to=new_assignee,
                     assigned_by=user_id,
                     task_title=data.get("title", "Unknown Task")
@@ -217,7 +217,7 @@ class RealtimeIntegrationManager:
     async def _handle_task_deleted(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -231,14 +231,14 @@ class RealtimeIntegrationManager:
                 "task_id": task_id,
                 "task_title": data.get("title", "Unknown Task"),
                 "deleted_by": user_id,
-                "project_id": project_id
+                "space_id": space_id
             },
             timestamp=datetime.utcnow(),
-            room_id=project_id,
+            room_id=space_id,
             user_id=user_id
         )
         
-        await ws_manager.broadcast_to_project(project_id, delete_message)
+        await ws_manager.broadcast_to_project(space_id, delete_message)
         
         # Activity logging
         await activity_feed_service.log_task_activity(
@@ -246,7 +246,7 @@ class RealtimeIntegrationManager:
             user_id=user_id,
             user_name=user_name,
             workspace_id=workspace_id,
-            project_id=project_id,
+            project_id=space_id,
             task_id=task_id,
             task_title=data.get("title", "Unknown Task"),
             changes={"deleted": True}
@@ -255,7 +255,7 @@ class RealtimeIntegrationManager:
     async def _handle_task_assigned(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -268,7 +268,7 @@ class RealtimeIntegrationManager:
             await realtime_task_service.notify_task_assigned(
                 task_id=task_id,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 assigned_to=assigned_to,
                 assigned_by=user_id,
                 old_assignee=data.get("old_assignee")
@@ -277,7 +277,7 @@ class RealtimeIntegrationManager:
             await notification_service.notify_task_assigned(
                 task_id=task_id,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 assigned_to=assigned_to,
                 assigned_by=user_id,
                 task_title=data.get("title", "Unknown Task")
@@ -286,7 +286,7 @@ class RealtimeIntegrationManager:
     async def _handle_status_changed(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -300,7 +300,7 @@ class RealtimeIntegrationManager:
         await realtime_task_service.notify_task_status_changed(
             task_id=task_id,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             old_status=old_status,
             new_status=new_status,
             changed_by=user_id
@@ -312,7 +312,7 @@ class RealtimeIntegrationManager:
             user_id=user_id,
             user_name=user_name,
             workspace_id=workspace_id,
-            project_id=project_id,
+            project_id=space_id,
             task_id=task_id,
             task_title=data.get("title", "Unknown Task"),
             changes={"status": {"old": old_status, "new": new_status}}
@@ -327,7 +327,7 @@ class RealtimeIntegrationManager:
                 await notification_service.notify_task_completed(
                     task_id=task_id,
                     workspace_id=workspace_id,
-                    project_id=project_id,
+                    space_id=space_id,
                     completed_by=user_id,
                     task_title=data.get("title", "Unknown Task"),
                     notify_users=notify_users
@@ -336,7 +336,7 @@ class RealtimeIntegrationManager:
     async def _handle_comment_added(
         self,
         task_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str,
         user_id: str,
         user_name: str,
@@ -350,7 +350,7 @@ class RealtimeIntegrationManager:
         await realtime_task_service.handle_comment_added(
             task_id=task_id,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             comment_id=data.get("comment_id", ""),
             comment_content=comment_content,
             user_id=user_id,
@@ -363,7 +363,7 @@ class RealtimeIntegrationManager:
             user_id=user_id,
             user_name=user_name,
             workspace_id=workspace_id,
-            project_id=project_id,
+            project_id=space_id,
             task_id=task_id,
             task_title=data.get("task_title", "Unknown Task"),
             comment_content=comment_content
@@ -375,7 +375,7 @@ class RealtimeIntegrationManager:
             await notification_service.notify_comment_added(
                 task_id=task_id,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 comment_author=user_id,
                 comment_author_name=user_name,
                 task_title=data.get("task_title", "Unknown Task"),
@@ -388,7 +388,7 @@ class RealtimeIntegrationManager:
             await notification_service.notify_mention(
                 task_id=task_id,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 mentioned_user=mentioned_user,
                 mentioned_by=user_id,
                 mentioned_by_name=user_name,

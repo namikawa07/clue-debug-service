@@ -29,11 +29,11 @@ class SprintService:
         )
         return result.scalar_one_or_none()
     
-    async def get_by_project(self, project_id: str) -> List[Sprint]:
-        """Get all sprints in a project"""
+    async def get_by_space(self, space_id: str) -> List[Sprint]:
+        """Get all sprints in a space"""
         result = await self.db.execute(
             select(Sprint)
-            .where(Sprint.project_id == project_id)
+            .where(Sprint.space_id == space_id)
             .order_by(Sprint.start_date.desc())
         )
         return list(result.scalars().all())
@@ -41,7 +41,7 @@ class SprintService:
     async def create(self, data: SprintCreate, user_id: str) -> Sprint:
         """Create a new sprint"""
         sprint = Sprint(
-            project_id=data.project_id,
+            space_id=data.space_id,
             name=data.name,
             start_date=data.start_date,
             end_date=data.end_date,
@@ -58,7 +58,7 @@ class SprintService:
             action=ActionType.CREATED,
             entity_type=EntityType.SPRINT,
             entity_id=sprint.id,
-            changes={"name": sprint.name, "project_id": str(sprint.project_id)}
+            changes={"name": sprint.name, "space_id": str(sprint.space_id)}
         )
         
         return sprint
@@ -93,7 +93,7 @@ class SprintService:
         if not sprint:
             return False
             
-        project_id = sprint.project_id
+        space_id = sprint.space_id
         
         result = await self.db.execute(
             delete(Sprint).where(Sprint.id == sprint_id)
@@ -107,7 +107,7 @@ class SprintService:
                 action=ActionType.DELETED,
                 entity_type=EntityType.SPRINT,
                 entity_id=sprint_id,
-                changes={"project_id": str(project_id)}
+                changes={"space_id": str(space_id)}
             )
             return True
         return False

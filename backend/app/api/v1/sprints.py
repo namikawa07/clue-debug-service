@@ -23,7 +23,7 @@ async def list_space_sprints(
 ):
     """List all sprints in a space"""
     service = SprintService(db)
-    sprints = await service.get_by_project(space_id)
+    sprints = await service.get_by_space(space_id)
     return sprints
 
 

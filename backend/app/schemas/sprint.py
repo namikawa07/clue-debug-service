@@ -18,7 +18,7 @@ class SprintBase(BaseModel):
 
 
 class SprintCreate(SprintBase):
-    project_id: str
+    space_id: str
 
 
 class SprintUpdate(BaseModel):
@@ -32,7 +32,7 @@ class SprintResponse(SprintBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: str
-    project_id: str
+    space_id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
 

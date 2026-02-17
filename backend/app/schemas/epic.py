@@ -20,7 +20,7 @@ class EpicBase(BaseModel):
 
 
 class EpicCreate(EpicBase):
-    project_id: str
+    space_id: str
 
 
 class EpicUpdate(BaseModel):
@@ -37,7 +37,7 @@ class EpicResponse(EpicBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: str
-    project_id: str
+    space_id: str
     actual_hours: float
     created_at: datetime
     updated_at: Optional[datetime] = None

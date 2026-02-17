@@ -29,11 +29,11 @@ class EpicService:
         )
         return result.scalar_one_or_none()
     
-    async def get_by_project(self, project_id: str) -> List[Epic]:
-        """Get all epics in a project"""
+    async def get_by_space(self, space_id: str) -> List[Epic]:
+        """Get all epics in a space"""
         result = await self.db.execute(
             select(Epic)
-            .where(Epic.project_id == project_id)
+            .where(Epic.space_id == space_id)
             .order_by(Epic.sequence_order.asc().nullslast(), Epic.created_at.desc())
         )
         return list(result.scalars().all())
@@ -41,7 +41,7 @@ class EpicService:
     async def create(self, data: EpicCreate, user_id: str) -> Epic:
         """Create a new epic"""
         epic = Epic(
-            project_id=data.project_id,
+            space_id=data.space_id,
             title=data.title,
             description=data.description,
             priority=data.priority,
@@ -60,7 +60,7 @@ class EpicService:
             action=ActionType.CREATED,
             entity_type=EntityType.EPIC,
             entity_id=epic.id,
-            changes={"title": epic.title, "project_id": str(epic.project_id)}
+            changes={"title": epic.title, "space_id": str(epic.space_id)}
         )
         
         return epic
@@ -95,7 +95,7 @@ class EpicService:
         if not epic:
             return False
             
-        project_id = epic.project_id
+        space_id = epic.space_id
         
         result = await self.db.execute(
             delete(Epic).where(Epic.id == epic_id)
@@ -109,7 +109,7 @@ class EpicService:
                 action=ActionType.DELETED,
                 entity_type=EntityType.EPIC,
                 entity_id=epic_id,
-                changes={"project_id": str(project_id)}
+                changes={"space_id": str(space_id)}
             )
             return True
         return False

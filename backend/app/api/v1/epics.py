@@ -23,7 +23,7 @@ async def list_space_epics(
 ):
     """List all epics in a space"""
     service = EpicService(db)
-    epics = await service.get_by_project(space_id)
+    epics = await service.get_by_space(space_id)
     return epics
 
 

@@ -21,9 +21,9 @@ class MessageType(str, Enum):
     TASK_DELETED = "task_deleted"
     TASK_ASSIGNED = "task_assigned"
     
-    # Project updates
-    PROJECT_UPDATED = "project_updated"
-    PROJECT_CREATED = "project_created"
+    # Space updates
+    SPACE_UPDATED = "space_updated"
+    SPACE_CREATED = "space_created"
     SPRINT_UPDATED = "sprint_updated"
     
     # User presence
@@ -93,7 +93,7 @@ class WebSocketManager:
         # Active connections: workspace_id -> {user_id: WSConnection}
         self.workspace_connections: Dict[str, Dict[str, WSConnection]] = {}
         
-        # Project rooms: project_id -> {user_ids}
+        # Space rooms: space_id -> {user_ids}
         self.project_rooms: Dict[str, Set[str]] = {}
         
         # Task rooms: task_id -> {user_ids}
@@ -230,7 +230,7 @@ class WebSocketManager:
             connection.subscriptions.add(room_id)
             
             # Add to room-specific tracking
-            if room_type == "project":
+            if room_type == "space" or room_type == "project":
                 if room_id not in self.project_rooms:
                     self.project_rooms[room_id] = set()
                 self.project_rooms[room_id].add(user_id)
@@ -287,12 +287,12 @@ class WebSocketManager:
                 # Remove broken connection
                 await self.disconnect(user_id, workspace_id)
 
-    async def broadcast_to_project(self, project_id: str, message: WSMessage, exclude_user: str = None):
-        """Broadcast message to all users subscribed to a project"""
-        if project_id not in self.project_rooms:
+    async def broadcast_to_project(self, space_id: str, message: WSMessage, exclude_user: str = None):
+        """Broadcast message to all users subscribed to a space (formerly project)"""
+        if space_id not in self.project_rooms:
             return
         
-        for user_id in self.project_rooms[project_id].copy():
+        for user_id in self.project_rooms[space_id].copy():
             if exclude_user and user_id == exclude_user:
                 continue
             
@@ -334,7 +334,7 @@ class WebSocketManager:
                 # Remove broken connection
                 await self.disconnect(user_id, connection.workspace_id)
 
-    async def notify_task_updated(self, task_id: str, task_data: Dict[str, Any], updated_by: str, project_id: str):
+    async def notify_task_updated(self, task_id: str, task_data: Dict[str, Any], updated_by: str, space_id: str):
         """Notify about task updates"""
         message = WSMessage(
             type=MessageType.TASK_UPDATED,
@@ -342,20 +342,20 @@ class WebSocketManager:
                 "task_id": task_id,
                 "task": task_data,
                 "updated_by": updated_by,
-                "project_id": project_id
+                "space_id": space_id
             },
             timestamp=datetime.utcnow(),
-            room_id=project_id,
+            room_id=space_id,
             user_id=updated_by
         )
         
-        # Broadcast to project members
-        await self.broadcast_to_project(project_id, message, exclude_user=updated_by)
+        # Broadcast to space members
+        await self.broadcast_to_project(space_id, message, exclude_user=updated_by)
         
         # Broadcast to task-specific subscribers
         await self.broadcast_to_task(task_id, message, exclude_user=updated_by)
 
-    async def notify_task_assigned(self, task_id: str, task_data: Dict[str, Any], assigned_to: str, assigned_by: str, project_id: str):
+    async def notify_task_assigned(self, task_id: str, task_data: Dict[str, Any], assigned_to: str, assigned_by: str, space_id: str):
         """Notify about task assignment"""
         message = WSMessage(
             type=MessageType.TASK_ASSIGNED,
@@ -364,27 +364,27 @@ class WebSocketManager:
                 "task": task_data,
                 "assigned_to": assigned_to,
                 "assigned_by": assigned_by,
-                "project_id": project_id
+                "space_id": space_id
             },
             timestamp=datetime.utcnow(),
-            room_id=project_id,
+            room_id=space_id,
             user_id=assigned_by
         )
         
         # Send to assigned user directly
         await self.send_personal_message(assigned_to, message)
         
-        # Broadcast to project
-        await self.broadcast_to_project(project_id, message, exclude_user=assigned_to)
+        # Broadcast to space
+        await self.broadcast_to_project(space_id, message, exclude_user=assigned_to)
 
-    async def notify_comment_added(self, task_id: str, comment_data: Dict[str, Any], mentioned_users: List[str], project_id: str):
+    async def notify_comment_added(self, task_id: str, comment_data: Dict[str, Any], mentioned_users: List[str], space_id: str):
         """Notify about new comments and mentions"""
         message = WSMessage(
             type=MessageType.COMMENT_ADDED,
             data={
                 "task_id": task_id,
                 "comment": comment_data,
-                "project_id": project_id
+                "space_id": space_id
             },
             timestamp=datetime.utcnow(),
             room_id=task_id,
@@ -401,7 +401,7 @@ class WebSocketManager:
                 data={
                     "task_id": task_id,
                     "comment": comment_data,
-                    "project_id": project_id
+                    "space_id": space_id
                 },
                 timestamp=datetime.utcnow(),
                 room_id=task_id,

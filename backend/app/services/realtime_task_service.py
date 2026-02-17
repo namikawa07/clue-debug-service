@@ -34,7 +34,7 @@ class RealtimeTaskService:
         self, 
         task_id: str, 
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         updated_by: str,
         changes: Dict[str, Any],
         old_task_data: Optional[Dict[str, Any]] = None,
@@ -51,7 +51,7 @@ class RealtimeTaskService:
             if not task:
                 return
             
-            # Broadcast task update to project
+            # Broadcast task update to space
             await ws_manager.notify_task_updated(
                 task_id=str(task.id),
                 task_data={
@@ -66,10 +66,10 @@ class RealtimeTaskService:
                     "changes": changes,
                     "old_data": old_task_data,
                     "new_data": new_task_data,
-                    "project_id": str(task.project_id)
+                    "space_id": str(task.space_id)
                 },
                 updated_by=updated_by,
-                project_id=project_id
+                space_id=space_id
             )
             
             # Log activity
@@ -93,7 +93,7 @@ class RealtimeTaskService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         assigned_to: str,
         assigned_by: str,
         old_assignee: Optional[str] = None
@@ -123,11 +123,11 @@ class RealtimeTaskService:
                     "assigned_to": str(task.assigned_to) if task.assigned_to else None,
                     "assigned_user_name": assigned_user.name if assigned_user else None,
                     "assigned_by": assigned_by,
-                    "project_id": str(task.project_id)
+                    "space_id": str(task.space_id)
                 },
                 assigned_to=assigned_to,
                 assigned_by=assigned_by,
-                project_id=project_id
+                space_id=space_id
             )
             
             # Special notification if task is reassigned from someone else
@@ -168,7 +168,7 @@ class RealtimeTaskService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         old_status: str,
         new_status: str,
         changed_by: str
@@ -193,15 +193,15 @@ class RealtimeTaskService:
                     "old_status": old_status,
                     "new_status": new_status,
                     "changed_by": changed_by,
-                    "project_id": project_id
+                    "space_id": space_id
                 },
                 timestamp=datetime.utcnow(),
-                room_id=project_id,
+                room_id=space_id,
                 user_id=changed_by
             )
             
-            # Broadcast to project and task rooms
-            await ws_manager.broadcast_to_project(project_id, status_message)
+            # Broadcast to space and task rooms
+            await ws_manager.broadcast_to_project(space_id, status_message)
             await ws_manager.broadcast_to_task(task_id, status_message)
             
             # Special handling for completion
@@ -213,14 +213,14 @@ class RealtimeTaskService:
                         "task_title": task.title,
                         "completed_by": changed_by,
                         "completed_at": datetime.utcnow().isoformat(),
-                        "project_id": project_id
+                        "space_id": space_id
                     },
                     timestamp=datetime.utcnow(),
-                    room_id=project_id,
+                    room_id=space_id,
                     user_id=changed_by
                 )
                 
-                await ws_manager.broadcast_to_project(project_id, completion_message)
+                await ws_manager.broadcast_to_project(space_id, completion_message)
             
             # Log activity
             activity_service = ActivityService(db)
@@ -365,7 +365,7 @@ class RealtimeTaskService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         comment_id: str,
         comment_content: str,
         user_id: str,
@@ -388,7 +388,7 @@ class RealtimeTaskService:
             task_id=task_id,
             comment_data=comment_data,
             mentioned_users=mentioned_users,
-            project_id=project_id
+            space_id=space_id
         )
         
         # Log activity

@@ -23,7 +23,7 @@ class WebSocketEventListeners:
     
     def __init__(self):
         self.active_tasks: Dict[str, Dict[str, Any]] = {}  # task_id -> task_data
-        self.active_Spaces: Dict[str, Dict[str, Any]] = {}  # project_id -> project_data
+        self.active_spaces: Dict[str, Dict[str, Any]] = {}  # space_id -> space_data
         self.due_date_check_interval = timedelta(hours=1)  # Check every hour
         self.daily_summary_time = "09:00"  # Send daily summary at 9 AM
         
@@ -338,7 +338,7 @@ class WebSocketEventListeners:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         updated_by: str,
         changes: Dict[str, Any]
     ):
@@ -368,7 +368,7 @@ class WebSocketEventListeners:
     async def handle_sprint_start_automation(
         self,
         sprint_id: str,
-        project_id: str,
+        space_id: str,
         workspace_id: str
     ):
         """Handle automated sprint start notifications"""
@@ -382,19 +382,19 @@ class WebSocketEventListeners:
             user_id="system",
             user_name="System",
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             sprint_name=sprint_name
         )
         
         # Send notification
         await notification_service.create_notification(
             notification_type=NotificationType.SPRINT_STARTED,
-            user_id="all",  # Broadcast to all project members
+            user_id="all",  # Broadcast to all space members
             title=f"Sprint Started: {sprint_name}",
             message=f"Sprint '{sprint_name}' has started. Good luck!",
             priority=NotificationPriority.MEDIUM,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             data={"sprint_id": sprint_id, "sprint_name": sprint_name}
         )
 

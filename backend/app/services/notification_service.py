@@ -26,8 +26,8 @@ class NotificationType(str, Enum):
     TASK_UPDATED = "task_updated"
     COMMENT_ADDED = "comment_added"
     MENTION = "mention"
-    PROJECT_CREATED = "project_created"
-    PROJECT_UPDATED = "project_updated"
+    SPACE_CREATED = "space_created"
+    SPACE_UPDATED = "space_updated"
     TEAM_MEMBER_ADDED = "team_member_added"
     DEADLINE_APPROACHING = "deadline_approaching"
     WELCOME = "welcome"
@@ -49,7 +49,7 @@ class Notification:
     message: str
     user_id: str
     workspace_id: str
-    project_id: Optional[str] = None
+    space_id: Optional[str] = None
     task_id: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
     created_at: datetime = None
@@ -91,7 +91,7 @@ class NotificationService:
         message: str,
         priority: NotificationPriority = NotificationPriority.MEDIUM,
         workspace_id: Optional[str] = None,
-        project_id: Optional[str] = None,
+        space_id: Optional[str] = None,
         task_id: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None
     ) -> str:
@@ -108,7 +108,7 @@ class NotificationService:
             message=message,
             user_id=user_id,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data=data
         )
@@ -133,7 +133,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         assigned_to: str,
         assigned_by: str,
         task_title: str
@@ -147,7 +147,7 @@ class NotificationService:
             message=f"You have been assigned to '{task_title}' by {assigned_by}",
             priority=NotificationPriority.HIGH,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data={
                 "assigned_by": assigned_by,
@@ -159,7 +159,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         assigned_to: str,
         task_title: str,
         due_date: datetime
@@ -173,7 +173,7 @@ class NotificationService:
             message=f"Your task '{task_title}' is due on {due_date.strftime('%b %d, %Y')}",
             priority=NotificationPriority.MEDIUM,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data={
                 "due_date": due_date.isoformat(),
@@ -185,7 +185,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         assigned_to: str,
         task_title: str,
         due_date: datetime
@@ -199,7 +199,7 @@ class NotificationService:
             message=f"Your task '{task_title}' was due on {due_date.strftime('%b %d, %Y')}",
             priority=NotificationPriority.CRITICAL,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data={
                 "due_date": due_date.isoformat(),
@@ -212,7 +212,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         completed_by: str,
         task_title: str,
         notify_users: List[str]
@@ -227,7 +227,7 @@ class NotificationService:
                 message=f"Task '{task_title}' was completed by {completed_by}",
                 priority=NotificationPriority.MEDIUM,
                 workspace_id=workspace_id,
-                project_id=project_id,
+                space_id=space_id,
                 task_id=task_id,
                 data={
                     "completed_by": completed_by,
@@ -239,7 +239,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         comment_author: str,
         comment_author_name: str,
         task_title: str,
@@ -255,7 +255,7 @@ class NotificationService:
             message=f"{comment_author_name} commented: '{comment_content[:50]}...'",
             priority=NotificationPriority.MEDIUM,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data={
                 "comment_author": comment_author,
@@ -268,7 +268,7 @@ class NotificationService:
         self,
         task_id: str,
         workspace_id: str,
-        project_id: str,
+        space_id: str,
         mentioned_user: str,
         mentioned_by: str,
         mentioned_by_name: str,
@@ -284,7 +284,7 @@ class NotificationService:
             message=f"{mentioned_by_name} mentioned you: '{comment_content[:50]}...'",
             priority=NotificationPriority.HIGH,
             workspace_id=workspace_id,
-            project_id=project_id,
+            space_id=space_id,
             task_id=task_id,
             data={
                 "mentioned_by": mentioned_by,
@@ -376,7 +376,7 @@ class NotificationService:
             "task_overdue": True,
             "comment_added": True,
             "mention": True,
-            "project_updates": True,
+            "space_updates": True,
             "quiet_hours": {
                 "enabled": False,
                 "start": "22:00",
@@ -443,7 +443,7 @@ class NotificationService:
                 "message": notification.message,
                 "created_at": notification.created_at.isoformat(),
                 "workspace_id": notification.workspace_id,
-                "project_id": notification.project_id,
+                "space_id": notification.space_id,
                 "task_id": notification.task_id,
                 "data": notification.data
             },

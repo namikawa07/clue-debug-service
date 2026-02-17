@@ -25,7 +25,7 @@ class UserPresence:
     user_id: str
     user_name: str
     workspace_id: str
-    current_project_id: Optional[str] = None
+    current_space_id: Optional[str] = None
     current_task_id: Optional[str] = None
     status: PresenceStatus = PresenceStatus.ONLINE
     last_seen: datetime = None
@@ -47,7 +47,7 @@ class PresenceUpdate:
     """Presence update data"""
     user_id: str
     status: Optional[PresenceStatus] = None
-    current_project_id: Optional[str] = None
+    current_space_id: Optional[str] = None
     current_task_id: Optional[str] = None
     is_typing: Optional[bool] = None
     is_editing: Optional[bool] = None
@@ -60,7 +60,7 @@ class PresenceService:
     def __init__(self):
         self.user_presence: Dict[str, UserPresence] = {}  # user_id -> presence
         self.workspace_presence: Dict[str, Set[str]] = {}  # workspace_id -> {user_ids}
-        self.project_presence: Dict[str, Set[str]] = {}  # project_id -> {user_ids}
+        self.space_presence: Dict[str, Set[str]] = {}  # space_id -> {user_ids}
         self.task_presence: Dict[str, Set[str]] = {}  # task_id -> {user_ids}
         
         # Activity tracking
@@ -91,7 +91,7 @@ class PresenceService:
         if user_id in self.user_presence:
             presence = self.user_presence[user_id]
             old_status = presence.status
-            old_project = presence.current_project_id
+            old_space = presence.current_space_id
             old_task = presence.current_task_id
         else:
             presence = UserPresence(
@@ -102,15 +102,15 @@ class PresenceService:
             )
             self.user_presence[user_id] = presence
             old_status = None
-            old_project = None
+            old_space = None
             old_task = None
         
         # Update presence data
         if update_data.status:
             presence.status = update_data.status
         
-        if update_data.current_project_id is not None:
-            presence.current_project_id = update_data.current_project_id
+        if update_data.current_space_id is not None:
+            presence.current_space_id = update_data.current_space_id
         
         if update_data.current_task_id is not None:
             presence.current_task_id = update_data.current_task_id
@@ -136,17 +136,17 @@ class PresenceService:
             self.workspace_presence[workspace_id] = set()
         self.workspace_presence[workspace_id].add(user_id)
         
-        # Update project presence if set
-        if presence.current_project_id:
-            if old_project and old_project != presence.current_project_id:
-                # Remove from old project
-                if old_project in self.project_presence:
-                    self.project_presence[old_project].discard(user_id)
+        # Update space presence if set
+        if presence.current_space_id:
+            if old_space and old_space != presence.current_space_id:
+                # Remove from old space
+                if old_space in self.space_presence:
+                    self.space_presence[old_space].discard(user_id)
             
-            # Add to new project
-            if presence.current_project_id not in self.project_presence:
-                self.project_presence[presence.current_project_id] = set()
-            self.project_presence[presence.current_project_id].add(user_id)
+            # Add to new space
+            if presence.current_space_id not in self.space_presence:
+                self.space_presence[presence.current_space_id] = set()
+            self.space_presence[presence.current_space_id].add(user_id)
         
         # Update task presence if set
         if presence.current_task_id:
@@ -163,7 +163,7 @@ class PresenceService:
         # Broadcast presence changes
         await self._broadcast_presence_change(presence, {
             "status_changed": old_status != presence.status,
-            "project_changed": old_project != presence.current_project_id,
+            "space_changed": old_space != presence.current_space_id,
             "task_changed": old_task != presence.current_task_id
         })
         
@@ -227,8 +227,8 @@ class PresenceService:
         elif activity_type == "viewing_task" and entity_id:
             presence.current_task_id = entity_id
         
-        elif activity_type == "viewing_project" and entity_id:
-            presence.current_project_id = entity_id
+        elif activity_type == "viewing_space" and entity_id:
+            presence.current_space_id = entity_id
         
         # Broadcast activity update
         activity_message = WSMessage(
@@ -264,10 +264,10 @@ class PresenceService:
         
         return presence_list
 
-    async def get_project_presence(self, project_id: str) -> List[Dict[str, Any]]:
-        """Get presence information for users in a project"""
+    async def get_space_presence(self, space_id: str) -> List[Dict[str, Any]]:
+        """Get presence information for users in a space"""
         
-        user_ids = self.project_presence.get(project_id, set())
+        user_ids = self.space_presence.get(space_id, set())
         presence_list = []
         
         for user_id in user_ids:
@@ -360,7 +360,7 @@ class PresenceService:
             "user_id": presence.user_id,
             "user_name": presence.user_name,
             "status": presence.status.value,
-            "current_project_id": presence.current_project_id,
+            "current_space_id": presence.current_space_id,
             "current_task_id": presence.current_task_id,
             "last_seen": presence.last_seen.isoformat(),
             "changes": changes
@@ -377,17 +377,17 @@ class PresenceService:
         
         await ws_manager.broadcast_to_workspace(presence.workspace_id, workspace_message, exclude_user=presence.user_id)
         
-        # Broadcast to project if user is in one
-        if presence.current_project_id and changes.get("project_changed"):
-            project_message = WSMessage(
+        # Broadcast to space if user is in one
+        if presence.current_space_id and changes.get("space_changed"):
+            space_message = WSMessage(
                 type="user_presence_changed",
                 data=message_data,
                 timestamp=datetime.utcnow(),
-                room_id=presence.current_project_id,
+                room_id=presence.current_space_id,
                 user_id="system"
             )
             
-            await ws_manager.broadcast_to_project(presence.current_project_id, project_message, exclude_user=presence.user_id)
+            await ws_manager.broadcast_to_project(presence.current_space_id, space_message, exclude_user=presence.user_id)
         
         # Broadcast to task if user is in one
         if presence.current_task_id and changes.get("task_changed"):
@@ -513,9 +513,9 @@ class PresenceService:
             if presence.workspace_id in self.workspace_presence:
                 self.workspace_presence[presence.workspace_id].discard(user_id)
             
-            # Remove from project
-            if presence.current_project_id and presence.current_project_id in self.project_presence:
-                self.project_presence[presence.current_project_id].discard(user_id)
+            # Remove from space
+            if presence.current_space_id and presence.current_space_id in self.space_presence:
+                self.space_presence[presence.current_space_id].discard(user_id)
             
             # Remove from task
             if presence.current_task_id and presence.current_task_id in self.task_presence:

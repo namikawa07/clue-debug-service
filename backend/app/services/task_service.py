@@ -207,60 +207,6 @@ class TaskService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
     
-    async def create(
-        self,
-        project_id: str,
-        data: TaskCreate,
-        user_id: str
-    ) -> Task:
-        """Create a new task"""
-        # If no epic_id provided, get or create default epic for project
-        epic_id = data.epic_id
-        if not epic_id:
-            # Get default epic or first epic in project
-            result = await self.db.execute(
-                select(Epic).where(Epic.project_id == project_id).limit(1)
-            )
-            epic = result.scalar_one_or_none()
-            if epic:
-                epic_id = epic.id
-        
-        # Get next position
-        position = await self._get_next_position(epic_id)
-        
-        task = Task(
-            epic_id=epic_id,
-            title=data.title,
-            description=data.description,
-            task_type=data.task_type,
-            status=data.status,
-            priority=data.priority,
-            assigned_to=data.assigned_to,
-            created_by=user_id,
-            estimated_hours=data.estimated_hours,
-            due_date=data.due_date,
-            dependencies=data.dependencies or [],
-            tags=data.tags or [],
-            ai_confidence=data.ai_confidence,
-            additional_data=data.additional_data or {},
-            position=position
-        )
-        
-        self.db.add(task)
-        await self.db.commit()
-        await self.db.refresh(task)
-        
-        # Log activity
-        await self.activity_service.log(
-            user_id=user_id,
-            action=ActionType.CREATED,
-            entity_type=EntityType.TASK,
-            entity_id=task.id,
-            changes={"title": task.title, "project_id": str(project_id)}
-        )
-        
-        return task
-    
     async def update(self, task_id: str, data: TaskUpdate, user_id: str) -> Optional[Task]:
         """Update a task"""
         task = await self.get_by_id(task_id)

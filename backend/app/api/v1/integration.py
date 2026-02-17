@@ -38,7 +38,7 @@ async def get_integration_status(
 async def trigger_test_event(
     event_type: str = "task_created",
     task_id: str = None,
-    project_id: str = None,
+    space_id: str = None,
     data: Dict[str, Any] = {},
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -52,17 +52,17 @@ async def trigger_test_event(
     - Activity feed logging
     - Presence system updates
     """
-    if not task_id or not project_id:
+    if not task_id or not space_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="task_id and project_id are required"
+            detail="task_id and space_id are required"
         )
     
     await realtime_integration_manager.trigger_task_event(
         event_type=event_type,
         task_id=str(task_id),
-        project_id=str(project_id),
-        workspace_id="test-workspace",  # Would come from project in real implementation
+        space_id=str(space_id),
+        workspace_id="test-workspace",  # Would come from space in real implementation
         user_id=str(current_user.id),
         user_name=current_user.name,
         data=data
@@ -74,7 +74,7 @@ async def trigger_test_event(
         "event_details": {
             "type": event_type,
             "task_id": str(task_id),
-            "project_id": str(project_id),
+            "space_id": str(space_id),
             "triggered_by": current_user.name
         }
     }
@@ -95,7 +95,7 @@ async def test_all_realtime_events(
     import uuid
     
     test_task_id = str(uuid.uuid4())
-    test_project_id = str(uuid.uuid4())
+    test_space_id = str(uuid.uuid4())
     test_workspace_id = "test-workspace"
     
     test_results = {}
@@ -117,7 +117,7 @@ async def test_all_realtime_events(
             await realtime_integration_manager.trigger_task_event(
                 event_type=event_type,
                 task_id=test_task_id,
-                project_id=test_project_id,
+                space_id=test_space_id,
                 workspace_id=test_workspace_id,
                 user_id=str(current_user.id),
                 user_name=current_user.name,
@@ -150,7 +150,7 @@ async def test_all_realtime_events(
             "detailed_results": test_results,
             "test_artifacts": {
                 "test_task_id": test_task_id,
-                "test_project_id": test_project_id,
+                "test_space_id": test_space_id,
                 "test_workspace_id": test_workspace_id,
                 "triggered_by": current_user.name
             }
@@ -217,9 +217,9 @@ async def get_performance_metrics(
         "data": performance_data
     }
 
-@router.post("/sync-project/{project_id}")
-async def sync_project_realtime(
-    project_id: str,
+@router.post("/sync-space/{space_id}")
+async def sync_space_realtime(
+    space_id: str,
     force_sync: bool = False,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -228,7 +228,7 @@ async def sync_project_realtime(
     Sync all project tasks with real-time system.
     
     ✅ **Sync Features:**
-    - Bulk processing of project tasks
+    - Bulk processing of space tasks
     - Real-time state synchronization
     - Presence reconciliation
     - Activity catch-up
@@ -241,7 +241,7 @@ async def sync_project_realtime(
     
     # For demonstration, we'll simulate the sync process
     sync_results = {
-        "project_id": str(project_id),
+        "space_id": str(space_id),
         "sync_triggered_by": current_user.name,
         "force_sync": force_sync,
         "timestamp": datetime.utcnow().isoformat()
@@ -249,9 +249,9 @@ async def sync_project_realtime(
     
     # Test integration manager
     await realtime_integration_manager.trigger_task_event(
-        event_type="project_synced",
-        task_id="project-level",
-        project_id=str(project_id),
+        event_type="space_synced",
+        task_id="space-level",
+        space_id=str(space_id),
         workspace_id="sync-workspace",
         user_id=str(current_user.id),
         user_name=current_user.name,
@@ -260,7 +260,7 @@ async def sync_project_realtime(
     
     return {
         "success": True,
-        "message": "Project sync with real-time system initiated",
+        "message": "Space sync with real-time system initiated",
         "data": sync_results
     }
 
@@ -307,7 +307,7 @@ async def check_frontend_readiness(
                 "type": "task_updated",
                 "data": {"task_id": "123", "changes": {"status": "done"}},
                 "timestamp": "2026-01-28T10:30:00Z",
-                "room_id": "project-456",
+                "room_id": "space-456",
                 "user_id": "user-789"
             }
         },
