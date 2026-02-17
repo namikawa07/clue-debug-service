@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, Sparkles, MessageSquare } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -10,16 +10,24 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 
+const MODELS = {
+    kimi: "moonshotai/Kimi-K2.5:fireworks-ai",
+    qwen: "Qwen/Qwen3-Coder-Next:novita"
+};
+
 export const AIChat = () => {
     const workspaceId = useWorkspaceId();
     const { data: members } = useGetMembers({ workspaceId });
 
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
+    const [selectedModel, setSelectedModel] = useState<"kimi" | "qwen">("qwen");
+    const [isThinking, setIsThinking] = useState(false);
+
     const [mentionQuery, setMentionQuery] = useState("");
     const [showMentions, setShowMentions] = useState(false);
     const [chatHistory, setChatHistory] = useState<{ role: "user" | "ai", content: string }[]>([
-        { role: "ai", content: "Hello! I'm your AI assistant. How can I help you today?" }
+        { role: "ai", content: "Hello! FinePro the Co-worker who will plan/coordinates your work" }
     ]);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -30,20 +38,77 @@ export const AIChat = () => {
         }
     }, [chatHistory, isOpen]);
 
-    const onSendMessage = (e: React.FormEvent) => {
+    const onSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!message.trim()) return;
+        if (!message.trim() || isThinking) return;
 
-        setChatHistory((prev) => [...prev, { role: "user", content: message }]);
+        const userMessage = message;
+        setChatHistory((prev) => [...prev, { role: "user", content: userMessage }]);
         setMessage("");
+        setIsThinking(true);
 
-        // Simulated AI response
-        setTimeout(() => {
+        try {
+            const hfToken = process.env.NEXT_PUBLIC_HF_TOKEN;
+            if (!hfToken) {
+                throw new Error("NEXT_PUBLIC_HF_TOKEN is not defined in .env.local");
+            }
+
+            const modelId = MODELS[selectedModel];
+
+            // Map history to the requested format for each model
+            const messages = chatHistory.concat({ role: "user", content: userMessage }).map(msg => {
+                const role = msg.role === "ai" ? "assistant" : "user";
+
+                // Kimi uses array-based content as per user example
+                if (selectedModel === "kimi" && role === "user") {
+                    return {
+                        role,
+                        content: [
+                            {
+                                type: "text",
+                                text: msg.content
+                            }
+                        ]
+                    };
+                }
+
+                // Default string content
+                return {
+                    role,
+                    content: msg.content
+                };
+            });
+
+            const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${hfToken}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: messages,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HF Router Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const aiResponse = data.choices[0].message.content;
+
+            setChatHistory((prev) => [...prev, { role: "ai", content: aiResponse }]);
+        } catch (error: any) {
+            console.error("AI Chat Error:", error);
             setChatHistory((prev) => [...prev, {
                 role: "ai",
-                content: "I'm currently in 'UI-only' mode, but I've received your message! Soon I'll be able to help you manage your tasks and projects."
+                content: `Error: ${error.message || "Something went wrong. Please check your token or try again later."}`
             }]);
-        }, 600);
+        } finally {
+            setIsThinking(false);
+        }
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +118,6 @@ export const AIChat = () => {
         const lastAt = val.lastIndexOf("@");
         const cursorPosition = e.target.selectionStart || 0;
 
-        // Check if we should show mentions: @ is at cursor and not preceded by non-space
         if (lastAt !== -1 && cursorPosition > lastAt) {
             const query = val.substring(lastAt + 1, cursorPosition);
             if (!query.includes(" ")) {
@@ -72,11 +136,9 @@ export const AIChat = () => {
         const beforeAt = message.substring(0, lastAt);
         const afterMention = message.substring(inputRef.current?.selectionStart || message.length);
 
-        // As requested: "the chat internally becomes User ID"
         setMessage(beforeAt + memberId + " " + afterMention);
         setShowMentions(false);
 
-        // Refocus and set cursor
         setTimeout(() => {
             if (inputRef.current) {
                 inputRef.current.focus();
@@ -97,7 +159,7 @@ export const AIChat = () => {
                 {/* Chat Window */}
                 {isOpen && (
                     <div className={cn(
-                        "mb-4 w-[380px] h-[500px] bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-in-out animate-in slide-in-from-bottom-4 zoom-in-95",
+                        "mb-4 w-[400px] h-[550px] bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-in-out animate-in slide-in-from-bottom-4 zoom-in-95",
                         "dark:bg-neutral-900/80 dark:border-neutral-800/50"
                     )}>
                         {/* Header */}
@@ -106,9 +168,14 @@ export const AIChat = () => {
                                 <div className="bg-white/20 p-1.5 rounded-lg">
                                     <Bot className="size-5" />
                                 </div>
-                                <div>
+                                <div className="flex flex-col">
                                     <h3 className="text-sm font-semibold">FinePro AI Assistant</h3>
-                                    <p className="text-[10px] opacity-80">Online and ready to help</p>
+                                    <div className="flex items-center gap-x-1">
+                                        <div className="size-1.5 bg-green-400 rounded-full animate-pulse" />
+                                        <span className="text-[10px] opacity-80 uppercase tracking-tighter">
+                                            {selectedModel === 'qwen' ? 'Qwen 3 Coder' : 'Kimi 2.5'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <Button
@@ -130,7 +197,7 @@ export const AIChat = () => {
                                 <div
                                     key={index}
                                     className={cn(
-                                        "max-w-[80%] p-3 rounded-2xl text-sm animate-in fade-in duration-300",
+                                        "max-w-[85%] p-3 rounded-2xl text-sm animate-in fade-in duration-300",
                                         msg.role === "user"
                                             ? "bg-primary text-primary-foreground ml-auto rounded-tr-none"
                                             : "bg-neutral-100 text-neutral-800 mr-auto rounded-tl-none dark:bg-neutral-800 dark:text-neutral-200"
@@ -139,11 +206,17 @@ export const AIChat = () => {
                                     {msg.content}
                                 </div>
                             ))}
+                            {isThinking && (
+                                <div className="flex items-center gap-x-2 mr-auto bg-neutral-100 text-neutral-500 p-3 rounded-2xl rounded-tl-none dark:bg-neutral-800">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    <span className="text-xs italic">AI is thinking...</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Mention List UI */}
                         {showMentions && filteredMembers.length > 0 && (
-                            <div className="absolute bottom-20 left-4 right-4 bg-white/95 backdrop-blur-md border border-neutral-200 rounded-xl shadow-2xl p-1 z-10 animate-in slide-in-from-bottom-2 dark:bg-neutral-900/95 dark:border-neutral-700">
+                            <div className="absolute bottom-[110px] left-4 right-4 bg-white/95 backdrop-blur-md border border-neutral-200 rounded-xl shadow-2xl p-1 z-10 animate-in slide-in-from-bottom-2 dark:bg-neutral-900/95 dark:border-neutral-700">
                                 <div className="px-2 py-1.5 text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
                                     Workspace Members
                                 </div>
@@ -163,32 +236,54 @@ export const AIChat = () => {
                                             <span className="text-xs font-semibold dark:text-white truncate">{member.name}</span>
                                             <span className="text-[10px] text-neutral-500 truncate">{member.email}</span>
                                         </div>
-                                        <div className="ml-auto flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded font-mono text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
-                                                {member.id.substring(0, 8)}...
-                                            </span>
-                                        </div>
                                     </button>
                                 ))}
                             </div>
                         )}
 
-                        {/* Input Area */}
-                        <div className="p-4 border-t border-neutral-100 dark:border-neutral-800">
+                        {/* Layout for Model Toggle and Input */}
+                        <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/20">
+                            {/* Model Toggle */}
+                            <div className="flex items-center gap-x-1 mb-3 bg-neutral-100 p-1 rounded-xl w-fit mx-auto dark:bg-neutral-800">
+                                <Button
+                                    onClick={() => setSelectedModel("qwen")}
+                                    variant={selectedModel === "qwen" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className={cn(
+                                        "h-7 text-[10px] px-3 rounded-lg font-bold uppercase tracking-wider",
+                                        selectedModel === "qwen" && "shadow-sm bg-white dark:bg-neutral-700"
+                                    )}
+                                >
+                                    Qwen 3
+                                </Button>
+                                <Button
+                                    onClick={() => setSelectedModel("kimi")}
+                                    variant={selectedModel === "kimi" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className={cn(
+                                        "h-7 text-[10px] px-3 rounded-lg font-bold uppercase tracking-wider",
+                                        selectedModel === "kimi" && "shadow-sm bg-white dark:bg-neutral-700"
+                                    )}
+                                >
+                                    Kimi 2.5
+                                </Button>
+                            </div>
+
                             <form onSubmit={onSendMessage} className="flex items-center gap-x-2">
                                 <Input
                                     ref={inputRef}
                                     value={message}
                                     onChange={handleInputChange}
-                                    placeholder="Ask me anything... (type @ for members)"
-                                    className="bg-neutral-50 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-10 dark:bg-neutral-800/50"
+                                    placeholder="Ask me anything..."
+                                    className="bg-white border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-10 shadow-sm dark:bg-neutral-800"
                                     autoComplete="off"
+                                    disabled={isThinking}
                                 />
                                 <Button
                                     type="submit"
                                     size="icon"
-                                    className="rounded-xl h-10 w-10 shrink-0"
-                                    disabled={!message.trim()}
+                                    className="rounded-xl h-10 w-10 shrink-0 shadow-lg"
+                                    disabled={!message.trim() || isThinking}
                                 >
                                     <Send className="size-4" />
                                 </Button>
