@@ -210,6 +210,7 @@ export function RealtimeProvider({ children, workspaceId }: RealtimeProviderProp
             const { access_token } = await response.json();
 
             if (!access_token) {
+                console.warn("[Realtime] No access token found in session");
                 setConnectionError("No authentication token");
                 return;
             }
@@ -248,7 +249,9 @@ export function RealtimeProvider({ children, workspaceId }: RealtimeProviderProp
             };
 
             ws.onerror = (error) => {
-                console.error("[Realtime] WebSocket error:", error);
+                // WebSocket errors don't provide much detail for security reasons,
+                // but we can at least log that it happened with the current URL.
+                console.error("[Realtime] WebSocket error occurred. Connection state:", ws.readyState, error);
                 setConnectionError("Connection error");
                 ws.close();
             };

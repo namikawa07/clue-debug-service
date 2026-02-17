@@ -30,19 +30,33 @@ export const OnboardingGuard = () => {
         // 2. Check for Onboarding Requirements
         const hasPassword = user.user_metadata?.has_password;
         // Check both metadata name and direct name property
-        const hasName = (user.user_metadata?.full_name && user.user_metadata.full_name.trim() !== "") ||
-            (user.user_metadata?.name && user.user_metadata.name.trim() !== "");
+        const hasName = Boolean(user.user_metadata?.full_name?.trim() || user.user_metadata?.name?.trim());
 
-        const hasWorkspaces = workspaces && workspaces?.total > 0;
+        // Improved hasWorkspaces check:
+        // If they have workspaces in the list, or if they are already on a workspace page
+        const isOnWorkspacePage = pathname?.startsWith("/workspaces/");
+        const hasWorkspacesList = workspaces && workspaces?.total > 0;
+        const hasWorkspaces = hasWorkspacesList || isOnWorkspacePage;
+
+        console.log("[OnboardingGuard] Check:", {
+            pathname,
+            hasPassword,
+            hasName,
+            hasWorkspacesList,
+            isOnWorkspacePage,
+            hasWorkspaces
+        });
 
         // If any requirement is missing, redirect to onboarding
         if (!hasPassword || !hasName || !hasWorkspaces) {
             // Avoid redirect loops if already on onboarding
             if (!pathname?.startsWith("/onboarding")) {
-                console.log("[OnboardingGuard] Missing requirements, redirecting to /onboarding", {
+                console.warn("[OnboardingGuard] Missing requirements, redirecting to /onboarding", {
                     hasPassword,
                     hasName,
-                    hasWorkspaces
+                    hasWorkspaces,
+                    hasWorkspacesList,
+                    isOnWorkspacePage
                 });
                 router.push("/onboarding");
             }
