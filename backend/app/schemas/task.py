@@ -35,6 +35,8 @@ class TaskBase(BaseModel):
     estimated_hours: Optional[float] = None
     additional_data: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
+    dependencies: Optional[List[str]] = None
+    ai_confidence: Optional[float] = None
 
 
 class TaskCreateRequest(TaskBase):
@@ -69,6 +71,8 @@ class TaskUpdate(BaseModel):
     space_id: Optional[str] = None
     additional_data: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
+    dependencies: Optional[List[str]] = None
+    ai_confidence: Optional[float] = None
 
 
 class TaskResponse(TaskBase):
