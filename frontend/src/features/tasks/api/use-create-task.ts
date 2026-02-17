@@ -85,8 +85,8 @@ export const useCreateTask = () => {
             queryClient.invalidateQueries({ queryKey: ["project-analytics"] });
             queryClient.invalidateQueries({ queryKey: ["workspace-analytics"] });
         },
-        onError: () => {
-            toast.error("Failed to create task");
+        onError: (error) => {
+            toast.error(error.message || "Failed to create task");
         }
     })
 

@@ -131,10 +131,10 @@ async def get_space_task_stats(
         )
     
     # Get space progress
-    progress = await activity_feed_service.get_project_progress(str(space_id))
+    progress = await activity_feed_service.get_space_progress(str(space_id))
     
     # Get current presence
-    presence = await presence_service.get_project_presence(str(space_id))
+    presence = await presence_service.get_space_presence(str(space_id))
     
     return {
         "space_id": str(space_id),

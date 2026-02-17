@@ -14,7 +14,12 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  return (
+  const isServer = typeof window === 'undefined';
+  if (isServer) {
+    console.log(`[SSR] [DashboardLayout] Start rendering at ${new Date().toISOString()}`);
+  }
+
+  const render = (
     <div className="min-h-screen bg-neutral-50">
       <OnboardingGuard />
       <CreateWorkspaceModal />
@@ -36,6 +41,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </RealtimeWrapper>
     </div>
   );
+
+  if (isServer) {
+    console.log(`[SSR] [DashboardLayout] Finish rendering at ${new Date().toISOString()}`);
+  }
+
+  return render;
 };
 
 export default DashboardLayout;

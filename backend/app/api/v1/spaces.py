@@ -126,5 +126,5 @@ async def get_space_analytics(
             detail="Space not found"
         )
         
-    analytics = await activity_feed_service.get_project_progress(str(space_id))
+    analytics = await activity_feed_service.get_space_progress(str(space_id))
     return analytics

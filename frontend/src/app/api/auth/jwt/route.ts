@@ -2,10 +2,14 @@ import { createSupabaseClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+    console.log("[JWT Bridge] GET request received at:", new Date().toISOString());
+    const startTime = Date.now();
     try {
-        console.log("[JWT Bridge] GET request received");
         const supabase = await createSupabaseClient()
+        console.log(`[JWT Bridge] Supabase client created in ${Date.now() - startTime}ms`);
+
         const { data: { session }, error } = await supabase.auth.getSession()
+        console.log(`[JWT Bridge] getSession completed in ${Date.now() - startTime}ms. Error: ${error?.message || 'none'}`);
 
         if (error) {
             console.error("[JWT Bridge] Supabase session error:", error);
@@ -17,7 +21,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
         }
 
-        console.log(`[JWT Bridge] Session found for user: ${session.user.email} (${session.user.id})`);
+        console.log(`[JWT Bridge] Session found for user: ${session.user.email} (${session.user.id}). Total time: ${Date.now() - startTime}ms`);
 
         return NextResponse.json({
             jwt: session.access_token,

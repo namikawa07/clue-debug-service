@@ -11,22 +11,42 @@ let tokenExpiry: number | null = null;
  * Fetches one-time JWT from Next.js Auth Bridge and exchanges it for a FastAPI JWT
  */
 async function fetchToken() {
+    const isServer = typeof window === 'undefined';
+
+    // On the server (SSR), we cannot reliably use the Auth Bridge because relative fetches hang
+    // and we cannot import server-only cookies/headers here as this file is used in client bundles.
+    if (isServer) {
+        return null;
+    }
+
     if (tokenCache && tokenExpiry && Date.now() < tokenExpiry) {
         return tokenCache;
     }
 
     try {
-        console.log("[AuthBridge] Fetching Supabase JWT...");
+        let supabaseToken: string | null = null;
+        let user_id: string | null = null;
+
+        // Client-side: Fetch Supabase JWT from /api/auth/jwt bridge
+        console.log("[AuthBridge] Client: Fetching session from /api/auth/jwt...");
         const response = await fetch("/api/auth/jwt");
         if (!response.ok) {
-            console.error("[AuthBridge] Could not fetch Supabase JWT", response.status);
-            throw new Error("Could not fetch Supabase JWT");
+            const errorText = await response.text();
+            console.error("[AuthBridge] JWT Bridge failed:", response.status, errorText);
+            throw new Error(`Auth Bridge error: ${response.status}`);
         }
-        const { jwt: supabaseToken, user_id } = await response.json();
-        console.log(`[AuthBridge] Received Supabase JWT for UserID: ${user_id}`);
+        const data = await response.json();
+        supabaseToken = data.jwt;
+        user_id = data.user_id;
+        console.log(`[AuthBridge] Client: Received JWT for ${user_id}`);
+
+        if (!supabaseToken) {
+            throw new Error("No token returned from Auth Bridge");
+        }
 
         // 2. Exchange Supabase JWT for FastAPI JWT
-        console.log("[AuthBridge] Exchanging for FastAPI token...");
+        console.log("[AuthBridge] Client: Exchanging for FastAPI token...");
+        const exchangeStartTime = Date.now();
         const exchangeResponse = await fetch(`${API_URL}/auth/exchange`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -34,20 +54,21 @@ async function fetchToken() {
         });
 
         if (!exchangeResponse.ok) {
-            console.error("[AuthBridge] FastAPI token exchange failed", exchangeResponse.status);
-            throw new Error("FastAPI token exchange failed");
+            const errorData = await exchangeResponse.json().catch(() => ({}));
+            console.error("[AuthBridge] FastAPI Exchange failed:", exchangeResponse.status, errorData);
+            throw new Error(errorData.detail || `Exchange failed: ${exchangeResponse.status}`);
         }
 
         const { access_token, expires_in } = await exchangeResponse.json();
-        console.log("[AuthBridge] FAST API Token exchange successful");
+        console.log(`[AuthBridge] Client: Exchange successful in ${Date.now() - exchangeStartTime}ms`);
 
         tokenCache = access_token;
         tokenExpiry = Date.now() + (access_token ? (expires_in - 60) * 1000 : 0); // Buffer of 60s
 
         return access_token;
-    } catch (error) {
-        console.error("[AuthBridge] Token Bridge Error:", error);
-        return null;
+    } catch (error: any) {
+        console.error("[AuthBridge] Bridge Error:", error.message);
+        throw error; // Re-throw so the caller knows auth failed
     }
 }
 
@@ -58,7 +79,19 @@ interface ApiOptions {
 
 export const api = {
     async request<T>(endpoint: string, options: RequestInit & { params?: Record<string, string> } = {}): Promise<T> {
-        const token = await fetchToken();
+        const isServer = typeof window === 'undefined';
+        const startTime = Date.now();
+        if (isServer) {
+            console.log(`[SSR] [API] Request Start: ${options.method || 'GET'} ${endpoint} at ${new Date().toISOString()}`);
+        }
+
+        let token: string | null = null;
+        try {
+            token = await fetchToken();
+        } catch (authError: any) {
+            console.error(`[API] Auth failed for ${endpoint}:`, authError.message);
+            throw new Error(`Authentication failed: ${authError.message}`);
+        }
 
         let url = `${API_URL}${endpoint}`;
         if (options.params) {
@@ -74,24 +107,36 @@ export const api = {
             ...(options.headers || {}),
         };
 
-        const response = await fetch(url, {
-            ...options,
-            headers,
-        });
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers,
+            });
 
-        if (response.status === 401) {
-            tokenCache = null;
-            tokenExpiry = null;
+            if (isServer) {
+                console.log(`[SSR] [API] Request Finish: ${options.method || 'GET'} ${endpoint} in ${Date.now() - startTime}ms (Status: ${response.status})`);
+            }
+
+            if (response.status === 401) {
+                tokenCache = null;
+                tokenExpiry = null;
+            }
+
+            if (response.status === 204) return null as any;
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[API] ${options.method || 'GET'} ${endpoint} failed:`, response.status, errorData);
+                throw new Error(errorData.detail || `API Request Failed: ${response.status}`);
+            }
+
+            return response.json();
+        } catch (error: any) {
+            if (isServer) {
+                console.error(`[SSR] [API] Request Error: ${options.method || 'GET'} ${endpoint} in ${Date.now() - startTime}ms:`, error);
+            }
+            throw error;
         }
-
-        if (response.status === 204) return null as any;
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || "API Request Failed");
-        }
-
-        return response.json();
     },
 
     async get<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {

@@ -4,45 +4,35 @@ import { cookies } from 'next/headers'
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from '@/config'
 
 export async function createSupabaseClient() {
-  const cookieStore = await cookies()
+  const startTime = Date.now();
+  console.log(`[SSR] [SupabaseServer] createSupabaseClient started: ${new Date().toISOString()}`);
 
-  return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const cookieStore = await cookies()
+  console.log(`[SSR] [SupabaseServer] await cookies() took ${Date.now() - startTime}ms`);
+
+  const client = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       get(name: string) {
         const val = cookieStore.get(name)?.value
-        if (name.includes('pkce')) {
-          console.log(`[Supabase SSR] GET cookie: ${name} = ${val ? 'FOUND' : 'NOT FOUND'}`);
-        }
         return val
       },
       set(name: string, value: string, options: CookieOptions) {
         try {
-          if (name.includes('pkce')) {
-            console.log(`[Supabase SSR] SET cookie: ${name} (options: ${JSON.stringify(options)})`);
-          }
           cookieStore.set({ name, value, ...options })
         } catch (error) {
-          // The `set` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-          // console.error(`[Supabase SSR] Error setting cookie ${name}:`, error)
         }
       },
       remove(name: string, options: CookieOptions) {
         try {
-          if (name.includes('pkce')) {
-            console.log(`[Supabase SSR] REMOVE cookie: ${name}`);
-          }
           cookieStore.set({ name, value: '', ...options })
         } catch (error) {
-          // The `remove` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-          // console.error(`[Supabase SSR] Error removing cookie ${name}:`, error)
         }
       }
     }
   })
+
+  console.log(`[SSR] [SupabaseServer] createServerClient completed in ${Date.now() - startTime}ms`);
+  return client;
 }
 
 export async function createSupabaseAdminClient() {

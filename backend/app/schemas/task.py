@@ -33,6 +33,8 @@ class TaskBase(BaseModel):
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     estimated_hours: Optional[float] = None
+    additional_data: Optional[Dict[str, Any]] = None
+    tags: Optional[List[str]] = None
 
 
 class TaskCreateRequest(TaskBase):
@@ -65,6 +67,8 @@ class TaskUpdate(BaseModel):
     epic_id: Optional[str] = None
     assigned_to: Optional[str] = None
     space_id: Optional[str] = None
+    additional_data: Optional[Dict[str, Any]] = None
+    tags: Optional[List[str]] = None
 
 
 class TaskResponse(TaskBase):
