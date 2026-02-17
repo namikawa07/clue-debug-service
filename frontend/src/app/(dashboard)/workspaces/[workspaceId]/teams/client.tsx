@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import Link from "next/link";
 import { CreateTeamModal } from "@/features/teams/components/create-team-modal";
 import { EditTeamModal } from "@/features/teams/components/edit-team-modal";
 
@@ -51,102 +52,104 @@ export const TeamsListClient = () => {
       <CreateTeamModal />
       <EditTeamModal />
       <div className="h-full flex flex-col">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">All teams</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage and organize your workspace teams
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">All teams</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage and organize your workspace teams
+            </p>
+          </div>
+          <Button onClick={openCreateTeam} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Plus className="size-4 mr-2" />
+            Add new
+          </Button>
         </div>
-        <Button onClick={openCreateTeam} className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="size-4 mr-2" />
-          Add new
-        </Button>
-      </div>
 
-      <div className="flex-1 border rounded-lg bg-white shadow-sm">
-        {!teams?.documents || teams.documents.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-muted-foreground mb-4">No teams yet</p>
-            <Button onClick={openCreateTeam} variant="outline">
-              <Plus className="size-4 mr-2" />
-              Create your first team
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Team name
-                  </th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Members
-                  </th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {teams.documents.map((team) => (
-                  <tr key={team.$id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <TeamAvatar team={team} className="size-8" />
-                        <span className="font-medium text-gray-900">{team.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-sm text-gray-700">
-                        {team.description || <span className="text-muted-foreground">-</span>}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-sm text-gray-700">
-                        {team.memberIds?.length || 0} {team.memberIds?.length === 1 ? "member" : "members"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm text-gray-700">
-                      {team.$createdAt ? format(new Date(team.$createdAt), "d MMM yyyy") : "-"}
-                    </td>
-                    <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(team)}>
-                            <Pencil className="size-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(team)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="size-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+        <div className="flex-1 border rounded-lg bg-white shadow-sm">
+          {!teams?.documents || teams.documents.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="text-muted-foreground mb-4">No teams yet</p>
+              <Button onClick={openCreateTeam} variant="outline">
+                <Plus className="size-4 mr-2" />
+                Create your first team
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Team name
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Members
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y">
+                  {teams.documents.map((team: any) => (
+                    <tr key={team.$id} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <TeamAvatar team={team} className="size-8" />
+                          <Link href={`/workspaces/${workspaceId}/teams/${team.$id}`}>
+                            <span className="font-medium text-blue-600 hover:underline cursor-pointer">{team.name}</span>
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-sm text-gray-700">
+                          {team.description || <span className="text-muted-foreground">-</span>}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-sm text-gray-700">
+                          {team.memberIds?.length || team.members?.length || 0} {(team.memberIds?.length || team.members?.length) === 1 ? "member" : "members"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm text-gray-700">
+                        {team.$createdAt ? format(new Date(team.$createdAt), "d MMM yyyy") : "-"}
+                      </td>
+                      <td className="p-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(team)}>
+                              <Pencil className="size-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(team)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="size-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 };

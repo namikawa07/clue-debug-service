@@ -33,12 +33,12 @@ export const JoinWorkspaceForm = ({
 
   const onSubmit = () => {
     mutate({
-        param: { workspaceId },
-        json: { code: inviteCode},
-    },{
-        onSuccess: ({data}) => {
-            router.push(`/workspaces/${data.$id}`);
-        },
+      param: { workspaceId },
+      json: { inviteCode: inviteCode },
+    }, {
+      onSuccess: ({ data }) => {
+        router.push(`/workspaces/${data.$id}`);
+      },
     });
   }
 
@@ -67,8 +67,8 @@ export const JoinWorkspaceForm = ({
             <Link href="/">Cancel</Link>
           </Button>
           <Button size="lg" className="w-full lg:w-fit" type="button"
-          onClick={onSubmit}
-          disabled={isPending}
+            onClick={onSubmit}
+            disabled={isPending}
           >
             Join Workspace
           </Button>
