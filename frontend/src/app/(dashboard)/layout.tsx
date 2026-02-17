@@ -8,6 +8,7 @@ import { RealtimeWrapper } from "@/components/realtime-wrapper";
 
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
+import { AIChat } from "@/features/ai/components/ai-chat";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </div>
       </RealtimeWrapper>
+      <AIChat />
     </div>
   );
 
