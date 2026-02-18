@@ -12,6 +12,7 @@ from . import members
 from . import notifications
 from . import integration
 from . import teams
+from . import ai_agent
 
 auth_router = auth.router
 workspaces_router = workspaces.router
@@ -24,6 +25,7 @@ members_router = members.router
 notifications_router = notifications.router
 integration_router = integration.router
 teams_router = teams.router
+ai_agent_router = ai_agent.router
 
 # Create main API router
 api_router = APIRouter()
@@ -40,3 +42,4 @@ api_router.include_router(members_router, tags=["Members"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(integration_router, prefix="/integration", tags=["Real-time Integration"])
 api_router.include_router(teams_router, tags=["Teams"])
+api_router.include_router(ai_agent_router, prefix="/ai-agent", tags=["AI Agent"])

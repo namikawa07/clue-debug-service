@@ -117,30 +117,23 @@ class WorkspaceService:
         from app.models.task import Task
         from app.models.space import Space
         from app.models.enums import TaskStatus
-        from datetime import datetime
+        from datetime import datetime, timezone
         
-        # Get all tasks in the workspace
-        # We need to join Workspace -> Space -> Epic -> Task
-        # Actually, our Task model has direct space_id? 
-        # Wait, let me check Task model again.
-        
-        # Query tasks via Epic-Space chain
-        from app.models.epic import Epic
-        
+        # Get all tasks in the workspace by joining Task directly to Space
         tasks_query = (
             select(Task)
-            .join(Epic, Task.epic_id == Epic.id)
-            .join(Space, Epic.space_id == Space.id)
-            .where(Space.workspace_id == workspace_id)
+            .join(Space, Task.space_id == Space.id)
+            .where(Space.workspace_id == str(workspace_id))
         )
         
         result = await self.db.execute(tasks_query)
         tasks = list(result.scalars().all())
         
-        now = datetime.utcnow()
+        # Use timezone-aware UTC now for comparison with aware due_date
+        now = datetime.now(timezone.utc)
         
         task_count = len(tasks)
-        assigned_task_count = len([t for t in tasks if t.assigned_to == user_id])
+        assigned_task_count = len([t for t in tasks if str(t.assigned_to) == str(user_id)])
         completed_task_count = len([t for t in tasks if t.status == TaskStatus.DONE])
         overdue_task_count = len([t for t in tasks if t.due_date and t.due_date < now and t.status != TaskStatus.DONE])
         incomplete_task_count = task_count - completed_task_count

@@ -27,6 +27,9 @@ class Settings:
     DEBUG: bool = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
     
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "")
+    
+    # Hugging Face API
+    HF_TOKEN: str = os.getenv("HF_TOKEN", "")
 
     @property
     def supabase_url(self) -> str:

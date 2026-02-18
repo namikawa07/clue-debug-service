@@ -5,15 +5,13 @@ import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { API_URL } from "@/config";
 
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 
-const MODELS = {
-    kimi: "moonshotai/Kimi-K2.5:fireworks-ai",
-    qwen: "Qwen/Qwen3-Coder-Next:novita"
-};
+
 
 export const AIChat = () => {
     const workspaceId = useWorkspaceId();
@@ -48,63 +46,35 @@ export const AIChat = () => {
         setIsThinking(true);
 
         try {
-            const hfToken = process.env.NEXT_PUBLIC_HF_TOKEN;
-            if (!hfToken) {
-                throw new Error("NEXT_PUBLIC_HF_TOKEN is not defined in .env.local");
-            }
+            // Build message history for the backend
+            const messages = chatHistory.concat({ role: "user", content: userMessage }).map(msg => ({
+                role: msg.role === "ai" ? "assistant" : "user",
+                content: msg.content
+            }));
 
-            const modelId = MODELS[selectedModel];
-
-            // Map history to the requested format for each model
-            const messages = chatHistory.concat({ role: "user", content: userMessage }).map(msg => {
-                const role = msg.role === "ai" ? "assistant" : "user";
-
-                // Kimi uses array-based content as per user example
-                if (selectedModel === "kimi" && role === "user") {
-                    return {
-                        role,
-                        content: [
-                            {
-                                type: "text",
-                                text: msg.content
-                            }
-                        ]
-                    };
-                }
-
-                // Default string content
-                return {
-                    role,
-                    content: msg.content
-                };
-            });
-
-            const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+            const response = await fetch(`${API_URL}/ai-agent`, {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${hfToken}`,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    model: modelId,
+                    model: selectedModel,
                     messages: messages,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `HF Router Error: ${response.status} ${response.statusText}`);
+                throw new Error(errorData.detail || `Backend Error: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
-            const aiResponse = data.choices[0].message.content;
-
-            setChatHistory((prev) => [...prev, { role: "ai", content: aiResponse }]);
+            setChatHistory((prev) => [...prev, { role: "ai", content: data.content }]);
         } catch (error: any) {
             console.error("AI Chat Error:", error);
             setChatHistory((prev) => [...prev, {
                 role: "ai",
-                content: `Error: ${error.message || "Something went wrong. Please check your token or try again later."}`
+                content: `Error: ${error.message || "Something went wrong. Please try again later."}`
             }]);
         } finally {
             setIsThinking(false);
