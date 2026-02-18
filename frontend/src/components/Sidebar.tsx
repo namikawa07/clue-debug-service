@@ -20,6 +20,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { Spaces } from "@/components/spaces";
+import Image from "next/image";
 
 export const Sidebar = () => {
   const { data: user } = useCurrent();
@@ -53,8 +54,8 @@ export const Sidebar = () => {
       <div className="p-4 flex items-center gap-2 border-b border-gray-200 h-[60px]">
         <Link href={`/workspaces/${workspaceId}`}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gray-900 rounded flex items-center justify-center">
-              <span className="text-white text-xs font-bold">FP</span>
+            <div className="w-8 h-8 rounded flex items-center justify-center">
+              <Image src="/images/finepro-lglogo.jpg" alt="FinePro Logo" width={80} height={80} />
             </div>
             <span className="font-semibold text-gray-900">FinePro</span>
           </div>
