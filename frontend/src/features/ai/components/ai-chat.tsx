@@ -94,7 +94,7 @@ export const AIChat = () => {
 
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
-    const [selectedModel, setSelectedModel] = useState<"kimi" | "qwen">("qwen");
+    const [selectedModel, setSelectedModel] = useState<"kimi" | "qwen">("kimi");
     const [isThinking, setIsThinking] = useState(false);
 
     const [mentionQuery, setMentionQuery] = useState("");
@@ -288,17 +288,6 @@ export const AIChat = () => {
                             {/* Model Toggle */}
                             <div className="flex items-center gap-x-1 mb-3 bg-neutral-100 p-1 rounded-xl w-fit mx-auto dark:bg-neutral-800">
                                 <Button
-                                    onClick={() => setSelectedModel("qwen")}
-                                    variant={selectedModel === "qwen" ? "secondary" : "ghost"}
-                                    size="sm"
-                                    className={cn(
-                                        "h-7 text-[10px] px-3 rounded-lg font-bold uppercase tracking-wider",
-                                        selectedModel === "qwen" && "shadow-sm bg-white dark:bg-neutral-700"
-                                    )}
-                                >
-                                    Qwen 3
-                                </Button>
-                                <Button
                                     onClick={() => setSelectedModel("kimi")}
                                     variant={selectedModel === "kimi" ? "secondary" : "ghost"}
                                     size="sm"
@@ -308,6 +297,17 @@ export const AIChat = () => {
                                     )}
                                 >
                                     Kimi 2.5
+                                </Button>
+                                <Button
+                                    onClick={() => setSelectedModel("qwen")}
+                                    variant={selectedModel === "qwen" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className={cn(
+                                        "h-7 text-[10px] px-3 rounded-lg font-bold uppercase tracking-wider",
+                                        selectedModel === "qwen" && "shadow-sm bg-white dark:bg-neutral-700"
+                                    )}
+                                >
+                                    Qwen 3
                                 </Button>
                             </div>
 
