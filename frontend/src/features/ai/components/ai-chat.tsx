@@ -1,20 +1,94 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { API_URL } from "@/config";
+import { api } from "@/lib/api";
 
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 
 
+interface AiAgentResponse {
+    content: string;
+    role: string;
+    tool_calls_made?: string[] | null;
+}
+
+
+// ── Rich message renderer ───────────────────────────────────────────────────
+// Parses @[Name](member:id) and #[Title](task:id) patterns into styled elements
+const RichMessage = ({ content, workspaceId }: { content: string; workspaceId: string }) => {
+    const parts = useMemo(() => {
+        const tokens: { type: "text" | "member" | "task"; value: string; id?: string }[] = [];
+        // Match @[Name](member:id) and #[Title](task:id)
+        const regex = /(@\[([^\]]+)\]\(member:([^)]+)\))|(#\[([^\]]+)\]\(task:([^)]+)\))/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = regex.exec(content)) !== null) {
+            // Push preceding text
+            if (match.index > lastIndex) {
+                tokens.push({ type: "text", value: content.slice(lastIndex, match.index) });
+            }
+
+            if (match[1]) {
+                // Member reference
+                tokens.push({ type: "member", value: match[2], id: match[3] });
+            } else if (match[4]) {
+                // Task reference
+                tokens.push({ type: "task", value: match[5], id: match[6] });
+            }
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        // Push trailing text
+        if (lastIndex < content.length) {
+            tokens.push({ type: "text", value: content.slice(lastIndex) });
+        }
+
+        return tokens;
+    }, [content]);
+
+    return (
+        <span>
+            {parts.map((part, i) => {
+                if (part.type === "member") {
+                    return (
+                        <span
+                            key={i}
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 bg-neutral-200/80 dark:bg-neutral-700/80 text-neutral-700 dark:text-neutral-200 rounded-md text-xs font-medium"
+                        >
+                            @{part.value}
+                        </span>
+                    );
+                }
+                if (part.type === "task") {
+                    return (
+                        <a
+                            key={i}
+                            href={`/workspaces/${workspaceId}/tasks/${part.id}`}
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium hover:underline cursor-pointer"
+                        >
+                            #{part.value}
+                        </a>
+                    );
+                }
+                return <span key={i}>{part.value}</span>;
+            })}
+        </span>
+    );
+};
+
 
 export const AIChat = () => {
     const workspaceId = useWorkspaceId();
+    const queryClient = useQueryClient();
     const { data: members } = useGetMembers({ workspaceId });
 
     const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +99,7 @@ export const AIChat = () => {
     const [mentionQuery, setMentionQuery] = useState("");
     const [showMentions, setShowMentions] = useState(false);
     const [chatHistory, setChatHistory] = useState<{ role: "user" | "ai", content: string }[]>([
-        { role: "ai", content: "Hello! FinePro the Co-worker who will plan/coordinates your work" }
+        { role: "ai", content: "Hello! I can create tasks, look up your team, and manage your workspace. Just ask!" }
     ]);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -46,30 +120,22 @@ export const AIChat = () => {
         setIsThinking(true);
 
         try {
-            // Build message history for the backend
-            const messages = chatHistory.concat({ role: "user", content: userMessage }).map(msg => ({
-                role: msg.role === "ai" ? "assistant" : "user",
-                content: msg.content
-            }));
-
-            const response = await fetch(`${API_URL}/ai-agent`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    model: selectedModel,
-                    messages: messages,
-                }),
+            const data = await api.post<AiAgentResponse>("/ai-agent", {
+                message: userMessage,
+                workspaceId: workspaceId,
+                model: selectedModel,
+                chatHistory: chatHistory,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || `Backend Error: ${response.status} ${response.statusText}`);
-            }
 
-            const data = await response.json();
             setChatHistory((prev) => [...prev, { role: "ai", content: data.content }]);
+
+            // ── Auto-refresh logic ──────────────────────────────────────
+            // If AI made changes to tasks, invalidate the tasks query key
+            if (data.tool_calls_made?.some(tc => tc === "create_task" || tc === "update_task")) {
+                console.log("AI modified tasks. Invalidating 'tasks' query...");
+                queryClient.invalidateQueries({ queryKey: ["tasks"] });
+            }
         } catch (error: any) {
             console.error("AI Chat Error:", error);
             setChatHistory((prev) => [...prev, {
@@ -81,6 +147,7 @@ export const AIChat = () => {
         }
     };
 
+    // ── @mention logic ──────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setMessage(val);
@@ -101,18 +168,18 @@ export const AIChat = () => {
         }
     };
 
-    const selectMember = (memberId: string) => {
+    const selectMember = (memberName: string) => {
         const lastAt = message.lastIndexOf("@");
         const beforeAt = message.substring(0, lastAt);
         const afterMention = message.substring(inputRef.current?.selectionStart || message.length);
 
-        setMessage(beforeAt + memberId + " " + afterMention);
+        setMessage(beforeAt + "@" + memberName + " " + afterMention);
         setShowMentions(false);
 
         setTimeout(() => {
             if (inputRef.current) {
                 inputRef.current.focus();
-                const newPos = beforeAt.length + memberId.length + 1;
+                const newPos = beforeAt.length + memberName.length + 2; // +2 for @ and space
                 inputRef.current.setSelectionRange(newPos, newPos);
             }
         }, 0);
@@ -173,7 +240,11 @@ export const AIChat = () => {
                                             : "bg-neutral-100 text-neutral-800 mr-auto rounded-tl-none dark:bg-neutral-800 dark:text-neutral-200"
                                     )}
                                 >
-                                    {msg.content}
+                                    {msg.role === "ai" ? (
+                                        <RichMessage content={msg.content} workspaceId={workspaceId} />
+                                    ) : (
+                                        msg.content
+                                    )}
                                 </div>
                             ))}
                             {isThinking && (
@@ -194,7 +265,7 @@ export const AIChat = () => {
                                     <button
                                         key={member.id}
                                         type="button"
-                                        onClick={() => selectMember(member.id)}
+                                        onClick={() => selectMember(member.name)}
                                         className="w-full flex items-center gap-x-2 p-2 hover:bg-neutral-100 rounded-lg transition-colors text-left dark:hover:bg-neutral-800 group"
                                     >
                                         <MemberAvatar
@@ -244,7 +315,7 @@ export const AIChat = () => {
                                     ref={inputRef}
                                     value={message}
                                     onChange={handleInputChange}
-                                    placeholder="Ask me anything..."
+                                    placeholder="Ask me anything... (@ to mention)"
                                     className="bg-white border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-10 shadow-sm dark:bg-neutral-800"
                                     autoComplete="off"
                                     disabled={isThinking}
