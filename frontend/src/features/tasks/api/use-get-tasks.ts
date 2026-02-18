@@ -55,7 +55,7 @@ export const useGetTasks = ({
                 spaceId: response.space?.id || response.epic_id || "",
                 assigneeId: response.assigned_to || "",
                 position: response.position || 0,
-                dueDate: response.due_date || "",
+                dueDate: response.due_date || null,
                 description: response.description,
                 priority: response.priority,
 

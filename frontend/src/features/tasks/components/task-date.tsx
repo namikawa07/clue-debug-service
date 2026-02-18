@@ -3,11 +3,14 @@ import { differenceInDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface TaskDateProps {
-    value: string;
+    value: string | null;
     className?: string;
 }
 
 export const TaskDate = ({ value, className }: TaskDateProps) => {
+    if (!value) {
+        return <div className={cn("text-muted-foreground", className)}>No due date</div>;
+    }
     const today = new Date();
     const endDate = new Date(value);
     const diffInDays = differenceInDays(endDate, today);
@@ -30,7 +33,7 @@ export const TaskDate = ({ value, className }: TaskDateProps) => {
     return (
         <div className={textColor}>
             <span className={cn("truncate", className)}>
-                {format(value, "PPP")}
+                {format(endDate, "PPP")}
             </span>
         </div>
     )

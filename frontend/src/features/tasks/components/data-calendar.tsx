@@ -12,7 +12,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { enUS } from "date-fns/locale";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { Task } from "../types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { EventCard } from "./event-card";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -66,19 +66,27 @@ const CustomToolbar = ({ date, onNavigate }: CustomToolbarProps) => {
 };
 
 export const DataCalendar = ({ data }: DataCalendarProps) => {
-  const [value, setValue] = useState(
-    data.length > 0 ? new Date(data[0].dueDate) : new Date()
-  );
+  const initialDate = useMemo(() => {
+    const firstValidDate = data.find(t => t.dueDate)?.dueDate;
+    return firstValidDate ? new Date(firstValidDate) : new Date();
+  }, [data]);
 
-  const events = data.map((task) => ({
-    start: new Date(task.dueDate),
-    end: new Date(task.dueDate),
-    title: task.name,
-    space: task.project,
-    assignee: task.assignee,
-    status: task.status,
-    id: task.$id,
-  }));
+  const [value, setValue] = useState(initialDate);
+
+  const events = useMemo(() =>
+    data
+      .filter(task => !!task.dueDate)
+      .map((task) => ({
+        start: new Date(task.dueDate!),
+        end: new Date(task.dueDate!),
+        title: task.name,
+        space: task.space,
+        assignee: task.assignee,
+        status: task.status,
+        id: task.$id,
+      })),
+    [data]
+  ) as any[];
 
   const handleNavigate = (action: "PREV" | "NEXT" | "TODAY") => {
     if (action === "PREV") {

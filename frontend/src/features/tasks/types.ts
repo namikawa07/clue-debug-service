@@ -14,7 +14,7 @@ export type Task = {
     assigneeId: string;
     spaceId: string;
     position: number;
-    dueDate: string;
+    dueDate: string | null;
     description?: string;
     startTime?: string;
     endTime?: string;

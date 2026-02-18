@@ -46,7 +46,7 @@ export const useGetTask = ({
                 spaceId: task.space_id || "",
                 assigneeId: task.assigned_to || "",
                 position: task.position || 0,
-                dueDate: task.due_date || "",
+                dueDate: task.due_date || null,
                 description: task.description,
                 priority: task.priority,
 

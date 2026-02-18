@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
+import Image from "next/image";
 
 
 interface AiAgentResponse {
@@ -202,8 +203,8 @@ export const AIChat = () => {
                         {/* Header */}
                         <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between">
                             <div className="flex items-center gap-x-2">
-                                <div className="bg-white/20 p-1.5 rounded-lg">
-                                    <Bot className="size-5" />
+                                <div className="bg-white/20 rounded-lg">
+                                    <Image src="/images/finepro-lglogo.jpg" className="rounded-lg" alt="FinePro AI Avatar" width={30} height={30} />
                                 </div>
                                 <div className="flex flex-col">
                                     <h3 className="text-sm font-semibold">FinePro AI Assistant</h3>
