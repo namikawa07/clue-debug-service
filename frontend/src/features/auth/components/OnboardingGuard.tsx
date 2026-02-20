@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useCurrent } from "../api/use-current";
 import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
-import { Loader } from "lucide-react";
 
 export const OnboardingGuard = () => {
     const router = useRouter();
     const pathname = usePathname();
     const { data: user, isLoading: isUserLoading } = useCurrent();
     const { data: workspaces, isLoading: isWorkspacesLoading } = useGetWorkspaces();
-
-    const [isChecking, setIsChecking] = useState(true);
 
     useEffect(() => {
         // Wait for both user and workspaces to load
@@ -22,7 +19,6 @@ export const OnboardingGuard = () => {
 
         // 1. Check if user is authenticated
         if (!user) {
-            setIsChecking(false);
             return;
         }
 
@@ -42,18 +38,18 @@ export const OnboardingGuard = () => {
             }
         }
 
-        setIsChecking(false);
-
     }, [user, workspaces, isUserLoading, isWorkspacesLoading, router, pathname]);
 
     // Optional: Show loading state while checking
-    if (isChecking && (isUserLoading || isWorkspacesLoading)) {
-        return (
-            <div className="h-full flex items-center justify-center">
-                <Loader className="size-6 animate-spin text-muted-foreground" />
-            </div>
-        );
-    }
+    // COMMENTED OUT: Remove the loading spinner
+    // if (isChecking && (isUserLoading || isWorkspacesLoading)) {
+    //     return (
+    //         <div className="h-full flex items-center justify-center">
+    //             <Loader className="size-6 animate-spin text-muted-foreground" />
+    //         </div>
+    //     );
+    // }
 
+    // Don't show anything while checking, just return null
     return null;
 };

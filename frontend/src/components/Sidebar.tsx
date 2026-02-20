@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +10,7 @@ import {
   Settings,
   FileText,
   ChevronDown,
+  ListTree,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ export const Sidebar = () => {
   const { data: user } = useCurrent();
   const workspaceId = useWorkspaceId();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const userId = user?.id;
   const displayName =
@@ -36,16 +38,44 @@ export const Sidebar = () => {
   const navItems = [
     { label: "Dashboard", href: `/workspaces/${workspaceId}`, icon: LayoutDashboard, exact: true },
     { label: "Tasks for you", href: `/workspaces/${workspaceId}/tasks?assigneeId=${userId}`, icon: CheckSquare, base: `/workspaces/${workspaceId}/tasks` },
-    { label: "Teams", href: `/workspaces/${workspaceId}/members`, icon: Users },
-    { label: "Notes", href: `/workspaces/${workspaceId}/notes`, icon: FileText },
     { label: "Created by you", href: `/workspaces/${workspaceId}/tasks?creatorId=${userId}`, icon: FilePen, base: `/workspaces/${workspaceId}/tasks` },
+    { label: "Notes", href: `/workspaces/${workspaceId}/notes`, icon: FileText },
+    { label: "Teams", href: `/workspaces/${workspaceId}/members`, icon: Users },
+    { label: "All tasks", href: `/workspaces/${workspaceId}/tasks`, icon: ListTree , base: `/workspaces/${workspaceId}/tasks` },
   ];
 
   const isActiveRoute = (item: { href: string; exact?: boolean; base?: string }) => {
     // Exact match for dashboard to prevent it being always active
     if (item.exact) return pathname === item.href;
+    
     // Use base path (without query params) for sub-routes
     const base = item.base || item.href.split("?")[0];
+    
+    // Check if item has query params
+    const itemHasQueryParams = item.href.includes("?");
+    const urlHasQueryParams = searchParams.toString().length > 0;
+    
+    // If item has query params but URL doesn't have any, don't match
+    // This prevents items like ?assigneeId=... from highlighting on plain /tasks URL
+    if (itemHasQueryParams && !urlHasQueryParams) return false;
+    
+    // If URL has query params but item doesn't have any, don't match
+    // This prevents "All tasks" from highlighting when URL has ?assigneeId=...
+    if (!itemHasQueryParams && urlHasQueryParams) return false;
+    
+    // If both have query params, extract and compare them
+    if (itemHasQueryParams && urlHasQueryParams) {
+      const itemParams = new URLSearchParams(item.href.split("?")[1]);
+      const urlParamKeys = Array.from(searchParams.keys());
+      
+      // Check if all params in item.href exist in URL
+      const hasMatchingParams = Array.from(itemParams.keys()).every(key => 
+        urlParamKeys.includes(key)
+      );
+      
+      if (!hasMatchingParams) return false;
+    }
+    
     return pathname === base || pathname?.startsWith(base + "/");
   };
 

@@ -99,6 +99,7 @@ export const Navbar = () => {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* ConnectionStatus loader in navbar */}
         <div className="hidden lg:flex items-center">
           <ConnectionStatus
             isConnected={isConnected}

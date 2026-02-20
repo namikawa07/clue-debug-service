@@ -37,10 +37,10 @@ interface TaskViewSwitcherProps {
 }
 
 const VIEW_TABS = [
+  { key: "kanban", label: "Board", icon: Columns3 },
   { key: "list", label: "Spreadsheet", icon: LayoutList },
   { key: "timeline", label: "Timeline", icon: Clock },
   { key: "calendar", label: "Calendar", icon: Calendar },
-  { key: "kanban", label: "Board", icon: Columns3 },
 ] as const;
 
 export const TaskViewSwitcher = ({
@@ -51,7 +51,7 @@ export const TaskViewSwitcher = ({
   const [showFilters, setShowFilters] = useState(false);
 
   const [view, setView] = useQueryState("task-view", {
-    defaultValue: "list",
+    defaultValue: "kanban",
   });
 
   const workspaceId = useWorkspaceId();

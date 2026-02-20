@@ -479,6 +479,7 @@ export function RealtimeProvider({ children, workspaceId }: RealtimeProviderProp
     // Effects
     // ============================================================================
 
+    // Socket connection loader - uncommented
     useEffect(() => {
         connect();
 

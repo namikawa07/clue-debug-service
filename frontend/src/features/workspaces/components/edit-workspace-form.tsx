@@ -5,7 +5,7 @@ import { useRef } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CopyIcon, ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
+import { ImageIcon, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ import useConfirm from "@/hooks/use-confirm";
 import { updateWorkspaceSchema } from "../schemas";
 import { useUpdateWorkspace } from "../api/use-update-workspace";
 import { useDeleteWorkspace } from "../api/use-delete-workspace";
-import { useResetInviteCode } from "../api/use-reset-invite-code";
+// import { useResetInviteCode } from "../api/use-reset-invite-code";
 
 interface EditWorkspaceFormProps {
   onCancel?: () => void;
@@ -34,8 +34,8 @@ interface EditWorkspaceFormProps {
 
 export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => {
   const { mutate: updateWorkspace, isPending } = useUpdateWorkspace();
-  const { mutate: deleteWorkspace, isPending: isDeletingWorkspace } = useDeleteWorkspace();
-  const { mutate: resetInviteCode, isPending: isResettingInviteCode } = useResetInviteCode();
+  // const { mutate: deleteWorkspace, isPending: isDeletingWorkspace } = useDeleteWorkspace();
+  // const { mutate: resetInviteCode, isPending: isResettingInviteCode } = useResetInviteCode();
 
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Workspace",
@@ -219,7 +219,8 @@ export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => 
       </section>
 
       {/* ── Invite link ── */}
-      <section className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+      {/* COMMENTED OUT: Moved to Members tab */}
+      {/* <section className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Invite Link</h3>
@@ -256,7 +257,7 @@ export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => 
             Copy
           </Button>
         </div>
-      </section>
+      </section> */}
 
       {/* ── Danger zone ── */}
       <section className="bg-white border border-red-100 rounded-xl shadow-sm p-6">
