@@ -3,17 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid,
-  LayoutList,
-  Users, // for Teams
-  Circle,
-  User, // for Created by me
+  LayoutDashboard,
+  Users,
+  CheckSquare,
+  FilePen,
+  Settings,
+  FileText,
   ChevronDown,
-  Plus,
-  MoreHorizontal,
-  Search,
 } from "lucide-react";
-import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
@@ -27,120 +24,115 @@ export const Sidebar = () => {
   const workspaceId = useWorkspaceId();
   const pathname = usePathname();
 
+  const userId = user?.id;
   const displayName =
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email ||
     "User";
   const avatarInitial = displayName.charAt(0).toUpperCase();
-  const userEmail = user?.email || "user@example.com";
+  const userEmail = user?.email || "";
 
-  // Navigation Items matching Admin scope
   const navItems = [
-    { label: "Dashboard", href: `/workspaces/${workspaceId}`, icon: LayoutGrid },
-    { label: "Inbox", href: `/workspaces/${workspaceId}/activity`, icon: LayoutList },
+    { label: "Dashboard", href: `/workspaces/${workspaceId}`, icon: LayoutDashboard, exact: true },
+    { label: "Tasks for you", href: `/workspaces/${workspaceId}/tasks?assigneeId=${userId}`, icon: CheckSquare, base: `/workspaces/${workspaceId}/tasks` },
     { label: "Teams", href: `/workspaces/${workspaceId}/members`, icon: Users },
-    { label: "Assigned to me", href: `/workspaces/${workspaceId}/tasks?assigneeId=${user?.$id}`, icon: Circle },
-    { label: "Created by me", href: `/workspaces/${workspaceId}/tasks?creatorId=${user?.$id}`, icon: User },
+    { label: "Notes", href: `/workspaces/${workspaceId}/notes`, icon: FileText },
+    { label: "Created by you", href: `/workspaces/${workspaceId}/tasks?creatorId=${userId}`, icon: FilePen, base: `/workspaces/${workspaceId}/tasks` },
   ];
 
-  const isActiveRoute = (href: string) => {
-    return pathname === href || pathname?.startsWith(href);
+  const isActiveRoute = (item: { href: string; exact?: boolean; base?: string }) => {
+    // Exact match for dashboard to prevent it being always active
+    if (item.exact) return pathname === item.href;
+    // Use base path (without query params) for sub-routes
+    const base = item.base || item.href.split("?")[0];
+    return pathname === base || pathname?.startsWith(base + "/");
   };
 
   return (
-    <aside className="h-full bg-white border-r border-gray-200 flex flex-col w-full">
+    <aside className="h-full bg-white border-r border-gray-100 flex flex-col w-full">
       {/* Logo */}
-      <div className="p-4 flex items-center gap-2 border-b border-gray-200 h-[60px]">
-        <Link href={`/workspaces/${workspaceId}`}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded flex items-center justify-center">
-              <Image src="/images/finepro-lglogo.jpg" alt="FinePro Logo" width={80} height={80} />
-            </div>
-            <span className="font-semibold text-gray-900">FinePro</span>
+      <div className="px-4 flex items-center gap-2 h-14 border-b border-gray-100 shrink-0">
+        <Link href={`/workspaces/${workspaceId}`} className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded overflow-hidden shrink-0">
+            <Image src="/images/finepro-lglogo.jpg" alt="FinePro Logo" width={28} height={28} className="object-cover" />
           </div>
+          <span className="font-bold text-gray-900 text-base tracking-tight">FinePro</span>
         </Link>
       </div>
 
       {/* Workspace Switcher */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="px-3 py-2.5 border-b border-gray-100 shrink-0">
         <WorkspaceSwitcher />
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-2">
-          {/* Main Links */}
-          <div className="space-y-0.5 mb-6">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActiveRoute(item.href);
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <nav className="p-2 space-y-0.5">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = isActiveRoute(item);
 
-              return (
-                <Link key={item.label} href={item.href}>
-                  <div
+            return (
+              <Link key={item.label} href={item.href}>
+                <div
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150 group",
+                    isActive
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  )}
+                >
+                  <Icon
+                    size={15}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200",
-                      isActive
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      "shrink-0 transition-colors",
+                      isActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"
                     )}
-                  >
-                    <Icon size={16} />
-                    <span>{item.label}</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  />
+                  <span className="truncate">{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
 
-          {/* Favorites - Placeholder */}
-          <div className="mb-2">
-            <div className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md group">
-              <div className="flex items-center gap-2 text-gray-600 group-hover:text-gray-900 transition-colors">
-                <ChevronDown size={14} />
-                <span className="text-xs font-semibold">Favorites</span>
-              </div>
-              <button className="text-gray-400 hover:text-gray-600 transition-colors opacity-0 group-hover:opacity-100">
-                <Plus size={14} />
-              </button>
-            </div>
-            {/* Empty favorites list placeholder */}
-          </div>
-
-          {/* Spaces */}
-          <div className="mt-2">
-            <Spaces />
-          </div>
+        {/* Spaces Section */}
+        <div className="px-2 mt-1">
+          <Spaces />
         </div>
       </div>
 
-      {/* Settings Link (Admin Scope) */}
-      <div className="p-2 border-t border-gray-200">
-        <Link href={`/workspaces/${workspaceId}/settings`}>
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200",
-            isActiveRoute(`/workspaces/${workspaceId}/settings`)
-              ? "bg-gray-100 text-gray-900 font-medium"
-              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-          )}>
-            <MoreHorizontal size={16} />
-            <span>Workspace Settings</span>
+      {/* Bottom: Settings + User */}
+      <div className="shrink-0 border-t border-gray-100">
+        <div className="p-2">
+          <Link href={`/workspaces/${workspaceId}/settings`}>
+            <div className={cn(
+              "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
+              pathname?.startsWith(`/workspaces/${workspaceId}/settings`)
+                ? "bg-blue-50 text-blue-700 font-medium"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            )}>
+              <Settings size={15} className={cn(
+                "shrink-0",
+                pathname?.startsWith(`/workspaces/${workspaceId}/settings`) ? "text-blue-600" : "text-gray-400"
+              )} />
+              <span>Settings</span>
+            </div>
+          </Link>
+        </div>
+        {/* User profile */}
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-2 px-2 py-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              {avatarInitial}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold truncate text-gray-900">{displayName}</div>
+              <div className="text-xs text-gray-400 truncate">{userEmail}</div>
+            </div>
+            <ChevronDown size={12} className="text-gray-400 shrink-0" />
           </div>
-        </Link>
-      </div>
-
-      {/* User Profile */}
-      <div className="p-3 border-t border-gray-200">
-        <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-medium">
-            {avatarInitial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate text-gray-900">{displayName}</div>
-            <div className="text-xs text-gray-500 truncate">{userEmail}</div>
-          </div>
-          <ChevronDown size={14} className="text-gray-400" />
         </div>
       </div>
     </aside>

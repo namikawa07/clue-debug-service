@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useGetTeams } from "@/features/teams/api/use-get-teams";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCreateTeamModal } from "@/features/teams/hooks/use-create-team-modal";
@@ -20,27 +19,25 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { CreateTeamModal } from "@/features/teams/components/create-team-modal";
 import { EditTeamModal } from "@/features/teams/components/edit-team-modal";
+import useConfirm from "@/hooks/use-confirm";
 
 export const TeamsListClient = () => {
   const workspaceId = useWorkspaceId();
   const { data: teams } = useGetTeams({ workspaceId });
   const { open: openCreateTeam } = useCreateTeamModal();
   const { open: openEditTeam } = useEditTeamModal();
-  const { mutate: deleteTeam } = useDeleteTeam();
+  const { mutate: deleteTeam, isPending: isDeleting } = useDeleteTeam();
 
-  const handleDelete = (team: Team) => {
-    if (confirm(`Are you sure you want to delete "${team.name}"? This action cannot be undone.`)) {
-      deleteTeam(
-        {
-          param: { teamId: team.$id },
-        },
-        {
-          onSuccess: () => {
-            // Success handled by toast in the hook
-          },
-        }
-      );
-    }
+  const [DeleteDialog, confirmDelete] = useConfirm(
+    "Delete Team",
+    "This team will be permanently deleted. Members will not be removed from the workspace.",
+    "destructive"
+  );
+
+  const handleDelete = async (team: Team) => {
+    const ok = await confirmDelete();
+    if (!ok) return;
+    deleteTeam({ param: { teamId: team.$id } });
   };
 
   const handleEdit = (team: Team) => {
@@ -51,6 +48,7 @@ export const TeamsListClient = () => {
     <>
       <CreateTeamModal />
       <EditTeamModal />
+      <DeleteDialog />
       <div className="h-full flex flex-col">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -134,6 +132,7 @@ export const TeamsListClient = () => {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDelete(team)}
+                              disabled={isDeleting}
                               className="text-destructive"
                             >
                               <Trash2 className="size-4 mr-2" />

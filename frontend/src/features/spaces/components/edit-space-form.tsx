@@ -4,257 +4,217 @@ import { z } from "zod";
 import Image from "next/image";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeftIcon, ImageIcon } from "lucide-react";
+import { ImageIcon, Trash2, Upload } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DottedSeparator } from "@/components/dotted-separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 
-import { cn } from "@/lib/utils";
 import useConfirm from "@/hooks/use-confirm";
-
 import { Space } from "../types";
 import { updateSpaceSchema } from "../schemas";
 import { useUpdateSpace } from "../api/use-update-space";
 import { useDeleteSpace } from "../api/use-delete-space";
 
 interface EditSpaceFormProps {
-    onCancel?: () => void;
-    initialValues: Space;
+  onCancel?: () => void;
+  initialValues: Space;
 }
 
-export const EditSpaceForm = ({
-    onCancel,
-    initialValues,
-}: EditSpaceFormProps) => {
-    const router = useRouter();
-    const { mutate, isPending } = useUpdateSpace();
-    const { mutate: deleteSpace, isPending: isDeletingSpace } = useDeleteSpace();
+export const EditSpaceForm = ({ initialValues }: EditSpaceFormProps) => {
+  const { mutate: updateSpace, isPending } = useUpdateSpace();
+  const { mutate: deleteSpace, isPending: isDeletingSpace } = useDeleteSpace();
 
-    const [DeleteDialog, confirmDelete] = useConfirm(
-        "Delete Space",
-        "This action can't be undone and will remove all associated data.",
-        "destructive"
-    );
+  const [DeleteDialog, confirmDelete] = useConfirm(
+    "Delete Space",
+    `This will permanently delete "${initialValues.name}" and all associated tasks. This action cannot be undone.`,
+    "destructive"
+  );
 
-    const handleDelete = async () => {
-        const ok = await confirmDelete();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-        if (!ok) return;
+  const form = useForm<z.infer<typeof updateSpaceSchema>>({
+    resolver: zodResolver(updateSpaceSchema),
+    defaultValues: {
+      ...initialValues,
+      image: initialValues.imageUrl ?? "",
+    },
+  });
 
-        deleteSpace(
-            {
-                param: { spaceId: initialValues.$id },
-            },
-            {
-                onSuccess: () => {
-                    window.location.href = `/workspaces/${initialValues.workspaceId}`;
-                },
-            }
-        );
-    };
-
-
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const form = useForm<z.infer<typeof updateSpaceSchema>>({
-        resolver: zodResolver(updateSpaceSchema),
-        defaultValues: {
-            ...initialValues,
-            image: initialValues.imageUrl ?? "",
-        },
+  const onSubmit = (values: z.infer<typeof updateSpaceSchema>) => {
+    updateSpace({
+      form: {
+        ...values,
+        image: values.image instanceof File ? values.image : "",
+        name: values.name || "",
+      },
+      param: { spaceId: initialValues.$id },
     });
+  };
 
-    const onSubmit = (values: z.infer<typeof updateSpaceSchema>) => {
-        const finalValues = {
-            ...values,
-            image: values.image instanceof File ? values.image : "",
-            name: values.name || "",
-        };
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) form.setValue("image", file);
+  };
 
-        mutate(
-            {
-                form: finalValues,
-                param: { spaceId: initialValues.$id },
-            }
-        );
-    };
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            form.setValue("image", file);
-        }
-    };
-
-    return (
-        <div className="flex flex-col gap-y-4">
-            <DeleteDialog />
-            <Card className="w-full h-full border-none shadow-none">
-                <CardHeader className="flex flex-row items-center gap-x-4 p-7 space-y-0">
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.workspaceId}/spaces/${initialValues.$id}`)}
-                    >
-                        Back
-                        <ArrowLeftIcon className="size-4 mr-2" />
-                    </Button>
-                    <CardTitle className="text-xl font-bold">
-                        {initialValues.name}
-                    </CardTitle>
-                </CardHeader>
-                <div className="px-7">
-                    <DottedSeparator />
-                </div>
-                <CardContent className="p-7">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)}>
-                            <div className="flex flex-col gap-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Space Name</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} placeholder="Enter Space name" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="image"
-                                    render={({ field }) => (
-                                        <div className="flex flex-col gap-y-2">
-                                            <div className="flex items-center gap-x-5">
-                                                {field.value ? (
-                                                    <div className="size-[72px] relative rounded-md overflow-hidden">
-                                                        <Image
-                                                            alt="Space Logo"
-                                                            fill
-                                                            className="object-cover"
-                                                            src={
-                                                                field.value instanceof File
-                                                                    ? URL.createObjectURL(field.value)
-                                                                    : field.value
-                                                            }
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <Avatar className="size-[72px]">
-                                                        <AvatarFallback>
-                                                            <ImageIcon className="size-[36px] text-neutral-400" />
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                )}
-                                                <div className="flex flex-col">
-                                                    <p className="text-sm">Space Icon</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        JPG, PNG, SVG or JPEG, max 1MB
-                                                    </p>
-                                                    <Input
-                                                        type="file"
-                                                        accept=".jpg, .png, .svg, .jpeg"
-                                                        className="hidden"
-                                                        ref={inputRef}
-                                                        disabled={isPending}
-                                                        onChange={handleImageChange}
-                                                    />
-                                                    {field.value ? (
-                                                        <Button
-                                                            type="button"
-                                                            disabled={isPending}
-                                                            variant="destructive"
-                                                            size="xs"
-                                                            className="w-fit mt-2"
-                                                            onClick={() => {
-                                                                field.onChange(null);
-                                                                if (inputRef.current) {
-                                                                    inputRef.current.value = "";
-                                                                }
-                                                            }}
-                                                        >
-                                                            Remove Image
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            type="button"
-                                                            disabled={isPending}
-                                                            variant="teritary"
-                                                            size="xs"
-                                                            className="w-fit mt-2"
-                                                            onClick={() => inputRef.current?.click()}
-                                                        >
-                                                            Upload Image
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                />
-                            </div>
-                            <DottedSeparator className="py-7" />
-                            <div className="flex items-center justify-between">
-                                <Button
-                                    type="button"
-                                    size="lg"
-                                    variant="secondary"
-                                    onClick={onCancel}
-                                    disabled={isPending}
-                                    className={cn(!onCancel && "invisible")}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    size="lg"
-                                >
-                                    Save Changes
-                                </Button>
-                            </div>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
-
-            <Card className="w-full h-full border-none shadow-none">
-                <CardContent className="p-7">
-                    <div className="flex flex-col">
-                        <h3 className="font-bold">Danger Zone</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Deleting a space is irreversible and will remove all
-                            associated data.
-                        </p>
-                        <DottedSeparator className="py-7" />
-                        <Button
-                            className="w-fit mt-6 ml-auto"
-                            size="sm"
-                            variant="destructive"
-                            type="button"
-                            disabled={isPending || isDeletingSpace}
-                            onClick={handleDelete}
-                        >
-                            Delete Space
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+  const handleDelete = async () => {
+    const ok = await confirmDelete();
+    if (!ok) return;
+    deleteSpace(
+      { param: { spaceId: initialValues.$id } },
+      { onSuccess: () => { window.location.href = `/workspaces/${initialValues.workspaceId}`; } }
     );
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <DeleteDialog />
+
+      {/* ── Space details ── */}
+      <section className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Space Details</h3>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
+            {/* Name */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700">Space Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="e.g. Frontend, Design, Marketing"
+                      className="h-9 border-gray-200 focus-visible:ring-blue-500"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Image */}
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700">Space Icon</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-4">
+                      {field.value ? (
+                        <div className="size-16 relative rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                          <Image
+                            alt="Space Icon"
+                            fill
+                            className="object-cover"
+                            src={
+                              field.value instanceof File
+                                ? URL.createObjectURL(field.value)
+                                : field.value
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <Avatar className="size-16 rounded-xl border border-gray-200 shrink-0">
+                          <AvatarFallback className="rounded-xl bg-gray-50">
+                            <ImageIcon className="size-6 text-gray-300" />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xs text-gray-500">JPG, PNG, SVG or JPEG · max 1 MB</p>
+                        <Input
+                          type="file"
+                          accept=".jpg,.png,.svg,.jpeg"
+                          className="hidden"
+                          ref={inputRef}
+                          disabled={isPending}
+                          onChange={handleImageChange}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending}
+                            onClick={() => inputRef.current?.click()}
+                            className="h-8 text-xs border-gray-200 gap-1.5"
+                          >
+                            <Upload size={12} />
+                            {field.value ? "Change" : "Upload"}
+                          </Button>
+                          {field.value && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={isPending}
+                              className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                field.onChange(null);
+                                if (inputRef.current) inputRef.current.value = "";
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-5"
+              >
+                {isPending ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </section>
+
+      {/* ── Danger zone ── */}
+      <section className="bg-white border border-red-100 rounded-xl shadow-sm p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Permanently delete this space and all its tasks. This cannot be undone.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            disabled={isPending || isDeletingSpace}
+            onClick={handleDelete}
+            className="shrink-0 gap-1.5 h-8"
+          >
+            <Trash2 size={13} />
+            Delete Space
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
 };

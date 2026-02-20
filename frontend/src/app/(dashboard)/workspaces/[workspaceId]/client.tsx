@@ -1,12 +1,22 @@
 "use client";
 
-import Link from "next/link"
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { PlusIcon, CalendarIcon, SettingsIcon } from "lucide-react";
+import {
+  PlusIcon,
+  CalendarIcon,
+  SettingsIcon,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Circle,
+  Loader2,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { Task } from "@/features/tasks/types";
+import { Task, TaskStatus } from "@/features/tasks/types";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetSpaces } from "@/features/spaces/api/use-get-spaces";
@@ -19,97 +29,106 @@ import { Button } from "@/components/ui/button";
 import { Analytics } from "@/components/analytics";
 import { PageError } from "@/components/page-error";
 import { PageLoader } from "@/components/page-loader";
-import { Card, CardContent } from "@/components/ui/card";
-import { DottedSeparator } from "@/components/dotted-separator";
 import { Space } from "@/features/spaces/types";
 import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
 import { Member } from "@/features/members/types";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { ActivityFeed } from "@/components/activity";
-import { PresenceList, PresenceAvatar } from "@/components/presence";
+import { PresenceAvatar } from "@/components/presence";
 import { useRealtime, useRecentlyUpdated } from "@/contexts/realtime-context";
+import type { PresenceUser } from "@/contexts/realtime-context";
 
+// ── Status helpers ──────────────────────────────────────────────────────────
+const statusConfig: Record<TaskStatus, { label: string; color: string; icon: React.ReactNode }> = {
+  [TaskStatus.TODO]: {
+    label: "Todo",
+    color: "bg-gray-100 text-gray-600",
+    icon: <Circle size={11} />,
+  },
+  [TaskStatus.IN_PROGRESS]: {
+    label: "In Progress",
+    color: "bg-blue-100 text-blue-700",
+    icon: <Loader2 size={11} className="animate-spin" />,
+  },
+  [TaskStatus.IN_REVIEW]: {
+    label: "In Review",
+    color: "bg-violet-100 text-violet-700",
+    icon: <AlertCircle size={11} />,
+  },
+  [TaskStatus.DONE]: {
+    label: "Done",
+    color: "bg-emerald-100 text-emerald-700",
+    icon: <CheckCircle2 size={11} />,
+  },
+  [TaskStatus.BLOCKED]: {
+    label: "Blocked",
+    color: "bg-red-100 text-red-700",
+    icon: <AlertCircle size={11} />,
+  },
+};
+
+const priorityConfig: Record<string, { label: string; color: string }> = {
+  critical: { label: "Critical", color: "bg-red-100 text-red-700" },
+  high:     { label: "High",     color: "bg-orange-100 text-orange-700" },
+  medium:   { label: "Medium",   color: "bg-yellow-100 text-yellow-700" },
+  low:      { label: "Low",      color: "bg-gray-100 text-gray-500" },
+};
+
+// ── Root client ─────────────────────────────────────────────────────────────
 export const WorkspaceIdClient = () => {
   const workspaceId = useWorkspaceId();
   const { presenceUsers } = useRealtime();
 
+  const { data: analytics, isLoading: isLoadingAnalytics } = useGetWorkspaceAnalytics({ workspaceId });
+  const { data: tasks,     isLoading: isLoadingTasks }     = useGetTasks({ workspaceId });
+  const { data: spaces,    isLoading: isLoadingSpaces }    = useGetSpaces({ workspaceId });
+  const { data: members,   isLoading: isLoadingMembers }   = useGetMembers({ workspaceId });
 
-  const { data: analytics, isLoading: isLoadingAnalytics } =
-    useGetWorkspaceAnalytics({ workspaceId });
-  const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
-    workspaceId,
-  });
-  const { data: spaces, isLoading: isLoadingSpaces } = useGetSpaces({
-    workspaceId,
-  });
-  const { data: members, isLoading: isLoadingMembers } = useGetMembers({
-    workspaceId,
-  });
+  const isLoading = isLoadingAnalytics || isLoadingTasks || isLoadingSpaces || isLoadingMembers;
 
-  const isLoading =
-    isLoadingAnalytics ||
-    isLoadingTasks ||
-    isLoadingSpaces ||
-    isLoadingMembers;
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
+  if (isLoading) return <PageLoader />;
   if (!analytics || !tasks || !spaces || !members) {
     return <PageError message="Failed to load workspace data" />;
   }
 
+  const taskDocs = tasks.documents.map((t: any) => ({
+    ...t,
+    $id: t.id || t.$id,
+  })) as Task[];
+
+  const spaceDocs = spaces.documents.map((s: any) => ({
+    ...s,
+    $id: s.id || s.$id,
+  })) as Space[];
+
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="flex flex-col gap-5">
+      {/* Analytics row */}
       <Analytics data={analytics} />
 
-      {/* Three column layout: Tasks | Spaces + Members | Activity + Presence */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {/* Left Column: Tasks */}
-        <div className="xl:col-span-1">
-          <TaskList
-            data={tasks.documents.map((task: any) => ({
-              ...task,
-              $id: task.id || task.$id,
-            })) as any}
-            total={tasks.total}
-          />
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Column 1 — Tasks */}
+        <TaskList data={taskDocs} total={tasks.total} />
+
+        {/* Column 2 — Spaces + Members */}
+        <div className="flex flex-col gap-5">
+          <SpaceList data={spaceDocs} total={spaces.total} />
+          <MembersList data={members.documents} presenceUsers={presenceUsers} />
         </div>
 
-        {/* Middle Column: Spaces + Members */}
-        <div className="xl:col-span-1 space-y-4">
-          <SpaceList
-            data={spaces.documents.map((space: any) => ({
-              ...space, // Use spread to capture all props including id/$id
-              $id: space.id || space.$id,
-              // Map legacy fields if needed, but 'types.ts' for Space has `id`, `name`, `workspaceId`.
-              // We should ensure we map correctly.
-              // useGetSpaces returns Space[] which has id, name, imageUrl.
-            })) as any}
-            total={spaces.total}
-          />
-          <MembersList data={members.documents} total={members.total} />
-        </div>
-
-        {/* Right Column: Activity Feed + Team Presence */}
-        <div className="xl:col-span-1 space-y-4">
-          <ActivityFeed
-            workspaceId={workspaceId}
-            maxHeight="400px"
-            showHeader={true}
-          />
-          <PresenceList
-            workspaceId={workspaceId}
-            maxHeight="300px"
-            showHeader={true}
-          />
-        </div>
+        {/* Column 3 — Activity */}
+        <ActivityFeed
+          workspaceId={workspaceId}
+          maxHeight="520px"
+          showHeader={true}
+        />
       </div>
     </div>
   );
 };
 
+// ── Task List ────────────────────────────────────────────────────────────────
 interface TaskListProps {
   data: Task[];
   total: number;
@@ -120,54 +139,87 @@ export const TaskList = ({ data, total }: TaskListProps) => {
   const { open: createTask } = useCreateTaskModel();
   const recentlyUpdated = useRecentlyUpdated();
 
+  const recent = data.slice(0, 8);
+
   return (
-    <div className="flex flex-col gap-y-4 col-span-1">
-      <div className="bg-muted rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Tasks ({total})</p>
-          <Button variant="muted" size="icon" onClick={createTask}>
-            <PlusIcon className="size-4 text-neutral-400" />
-          </Button>
+    <div className="bg-white border border-gray-100 rounded-xl shadow-sm flex flex-col">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div>
+          <p className="font-semibold text-gray-900 text-sm">Tasks</p>
+          <p className="text-xs text-gray-400 mt-0.5">{total} total</p>
         </div>
-        <DottedSeparator className="my-4" />
-        <ul className="flex flex-col gap-y-4">
-          {data.map((task) => (
-            <li key={task.$id}>
-              <Link href={`/workspaces/${workspaceId}/tasks/${task.$id}`}>
-                <Card className={cn(
-                  "shadow-none rounded-lg hover:opacity-75 transition duration-500",
-                  recentlyUpdated.has(task.$id) && "ring-2 ring-blue-500 ring-offset-2 animate-pulse"
-                )}>
-                  <CardContent className="p-4">
-                    <p className="text-lg font-medium truncate">{task.name}</p>
-                    <div className="flex items-center gap-x-2">
-                      {/* task.project?.name -> task.space?.name or we might need to update Task type */}
-                      <p>{task.spaceId || "Space"}</p>
-                      <div className="size-1 rounded-full bg-neutral-300" />
-                      <div className="text-sm text-muted-foreground flex items-center">
-                        <CalendarIcon className="size-3 mr-1" />
-                        <span className="truncate">
-                          {task.dueDate ? formatDistanceToNow(new Date(task.dueDate)) : "No due date"}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </li>
-          ))}
-          <li className="text-sm text-muted-foreground text-center hidden first-of-type:block">
-            No tasks found
-          </li>
-        </ul>
-        <Button variant="muted" className="mt-4 w-full" asChild>
-          <Link href={`/workspaces/${workspaceId}/tasks`}>Show All</Link>
+        <Button
+          size="sm"
+          onClick={createTask}
+          className="bg-blue-600 hover:bg-blue-700 text-white h-8 gap-1.5 text-xs"
+        >
+          <PlusIcon size={13} />
+          New task
         </Button>
+      </div>
+
+      <div className="flex-1 divide-y divide-gray-50">
+        {recent.length === 0 ? (
+          <div className="p-8 text-center text-sm text-gray-400">
+            No tasks yet. Create your first task!
+          </div>
+        ) : (
+          recent.map((task) => {
+            const status = statusConfig[task.status] ?? statusConfig[TaskStatus.TODO];
+            const priority = task.priority ? priorityConfig[task.priority] : null;
+            const isOverdue =
+              task.dueDate && new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE;
+
+            return (
+              <Link key={task.$id} href={`/workspaces/${workspaceId}/tasks/${task.$id}`}>
+                <div
+                  className={cn(
+                    "px-5 py-3 hover:bg-gray-50 transition-colors flex items-start gap-3",
+                    recentlyUpdated.has(task.$id) && "bg-blue-50"
+                  )}
+                >
+                  {/* Status dot */}
+                  <div className={cn("flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5", status.color)}>
+                    {status.icon}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {priority && (
+                        <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium", priority.color)}>
+                          {priority.label}
+                        </span>
+                      )}
+                      {task.dueDate && (
+                        <span className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-red-500 font-medium" : "text-gray-400")}>
+                          <CalendarIcon size={10} />
+                          {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+
+      <div className="px-5 py-3 border-t border-gray-100">
+        <Link
+          href={`/workspaces/${workspaceId}/tasks`}
+          className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+        >
+          View all tasks
+          <ArrowRight size={13} />
+        </Link>
       </div>
     </div>
   );
 };
 
+// ── Space List ───────────────────────────────────────────────────────────────
 interface SpaceListProps {
   data: Space[];
   total: number;
@@ -179,95 +231,110 @@ export const SpaceList = ({ data, total }: SpaceListProps) => {
   const recentlyUpdated = useRecentlyUpdated();
 
   return (
-    <div className="flex flex-col gap-y-4 col-span-1">
-      <div className="bg-white border rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Spaces ({total})</p>
-          <Button variant="secondary" size="icon" onClick={createSpace}>
-            <PlusIcon className="size-4 text-neutral-400" />
-          </Button>
+    <div className="bg-white border border-gray-100 rounded-xl shadow-sm flex flex-col">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div>
+          <p className="font-semibold text-gray-900 text-sm">Spaces</p>
+          <p className="text-xs text-gray-400 mt-0.5">{total} total</p>
         </div>
-        <DottedSeparator className="my-4" />
-        <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.map((space) => (
-            <li key={space.$id || space.id}>
-              <Link href={`/workspaces/${workspaceId}/spaces/${space.$id || space.id}`}>
-                <Card className={cn(
-                  "shadow-none rounded-lg hover:opacity-75 transition duration-500",
-                  recentlyUpdated.has(space.$id || space.id) && "ring-2 ring-blue-500 ring-offset-2 animate-pulse"
-                )}>
-                  <CardContent className="p-4 flex items-center gap-x-2.5">
-                    <SpaceAvatar
-                      className="size-12"
-                      fallbackClassName="text-lg"
-                      name={space.name}
-                      image={space.imageUrl}
-                    />
-                    <p className="text-lg font-medium truncate">
-                      {space.name}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </li>
-          ))}
-          <li className="text-sm text-muted-foreground text-center hidden first-of-type:block">
-            No Spaces found
-          </li>
-        </ul>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={createSpace}
+          className="h-8 gap-1.5 text-xs border-gray-200"
+        >
+          <PlusIcon size={13} />
+          New space
+        </Button>
       </div>
+
+      <div className="divide-y divide-gray-50">
+        {data.length === 0 ? (
+          <div className="p-6 text-center text-sm text-gray-400">
+            No spaces yet. Create your first space!
+          </div>
+        ) : (
+          data.slice(0, 5).map((space) => (
+            <Link key={space.$id || space.id} href={`/workspaces/${workspaceId}/spaces/${space.$id || space.id}`}>
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors",
+                  recentlyUpdated.has(space.$id || space.id) && "bg-blue-50"
+                )}
+              >
+                <SpaceAvatar
+                  className="size-8"
+                  fallbackClassName="text-sm"
+                  name={space.name}
+                  image={space.imageUrl}
+                />
+                <p className="text-sm font-medium text-gray-800 truncate flex-1">{space.name}</p>
+                <ArrowRight size={14} className="text-gray-300 shrink-0" />
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {total > 5 && (
+        <div className="px-5 py-3 border-t border-gray-100">
+          <Link
+            href={`/workspaces/${workspaceId}/spaces`}
+            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            View all spaces
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
 
+// ── Members List ─────────────────────────────────────────────────────────────
 interface MembersListProps {
   data: Member[];
-  total: number;
+  presenceUsers: Map<string, PresenceUser>;
 }
 
-export const MembersList = ({ data, total }: MembersListProps) => {
+export const MembersList = ({ data, presenceUsers }: MembersListProps) => {
   const workspaceId = useWorkspaceId();
-  const { presenceUsers } = useRealtime();
 
   return (
-    <div className="flex flex-col gap-y-4 col-span-1">
-      <div className="bg-white border rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Members ({total})</p>
-          <Button variant="secondary" size="icon" asChild>
-            <Link href={`/workspaces/${workspaceId}/members`}>
-              <SettingsIcon className="size-4 text-neutral-400" />
-            </Link>
-          </Button>
+    <div className="bg-white border border-gray-100 rounded-xl shadow-sm flex flex-col">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div>
+          <p className="font-semibold text-gray-900 text-sm">Team Members</p>
+          <p className="text-xs text-gray-400 mt-0.5">{data.length} members</p>
         </div>
-        <DottedSeparator className="my-4" />
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((member) => (
-            <li key={member.$id}>
-              <Card className="shadow-none rounded-lg overflow-hidden">
-                <CardContent className="p-3 flex flex-col items-center gap-x-2">
-                  <PresenceAvatar
-                    className="size-12"
-                    name={member.name || member.email || ''}
-                    avatarColor={member.avatarColor?.bg || '#3b82f6'}
-                    status={presenceUsers.get(member.userId)?.status || 'offline'}
-                  />
-                  <div className="flex flex-col items-center overflow-hidden">
-                    <p className="text-lg font-medium line-clamp-1">
-                      {member.name || member.email || 'Unknown'}
-                    </p>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {member.email}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-          <li className="text-sm text-muted-foreground text-center hidden first-of-type:block">
-            No members found
-          </li>
-        </ul>
+        <Button size="sm" variant="outline" asChild className="h-8 gap-1.5 text-xs border-gray-200">
+          <Link href={`/workspaces/${workspaceId}/members`}>
+            <SettingsIcon size={13} />
+            Manage
+          </Link>
+        </Button>
+      </div>
+
+      <div className="p-4 flex flex-wrap gap-2">
+        {data.length === 0 ? (
+          <p className="text-sm text-gray-400 p-2">No members found</p>
+        ) : (
+          data.slice(0, 12).map((member) => (
+            <div key={member.$id || member.id} className="group relative" title={member.name || member.email || ""}>
+              <PresenceAvatar
+                className="size-9"
+                name={member.name || member.email || ""}
+                avatarColor={member.avatarColor?.bg || "#3b82f6"}
+                status={presenceUsers.get(member.userId || member.user_id || "")?.status ?? "offline"}
+              />
+            </div>
+          ))
+        )}
+        {data.length > 12 && (
+          <div className="size-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500">
+            +{data.length - 12}
+          </div>
+        )}
       </div>
     </div>
   );

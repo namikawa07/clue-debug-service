@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Note } from "../types";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import useConfirm from "@/hooks/use-confirm";
 
 interface NotesSidebarProps {
   notes: Note[];
@@ -26,6 +27,11 @@ export const NotesSidebar = ({
   isLoading = false,
 }: NotesSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [DeleteDialog, confirmDelete] = useConfirm(
+    "Delete Note",
+    "This note will be permanently deleted. This action cannot be undone.",
+    "destructive"
+  );
 
   const filteredNotes = useMemo(() => {
     if (!searchQuery.trim()) return notes;
@@ -37,15 +43,16 @@ export const NotesSidebar = ({
     );
   }, [notes, searchQuery]);
 
-  const handleDelete = (e: React.MouseEvent, noteId: string) => {
+  const handleDelete = async (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this note?")) {
-      onDeleteNote(noteId);
-    }
+    const ok = await confirmDelete();
+    if (!ok) return;
+    onDeleteNote(noteId);
   };
 
   return (
     <div className="w-80 border-r bg-gray-50 flex flex-col h-full">
+      <DeleteDialog />
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Documents</h2>

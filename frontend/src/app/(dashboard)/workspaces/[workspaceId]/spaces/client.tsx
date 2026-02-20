@@ -69,7 +69,7 @@ export const SpacesListClient = () => {
     if (!tasks?.documents) return map;
 
     tasks.documents.forEach((task: Task) => {
-      const spaceId = task.projectId;
+      const spaceId = task.spaceId;
       if (!spaceId) return;
 
       const current = map.get(spaceId) || { completed: 0, total: 0, percentage: 0 };
@@ -117,6 +117,47 @@ export const SpacesListClient = () => {
 
     return { activeSpaces: active, closedSpaces: closed };
   }, [spaces?.documents, spaceProgressMap]);
+
+  const renderSpaceCard = (space: any) => {
+    const progress = spaceProgressMap.get(space.$id) || { percentage: 0, completed: 0, total: 0 };
+    const status = getStatus(space);
+
+    return (
+      <Link
+        key={space.$id}
+        href={`/workspaces/${workspaceId}/spaces/${space.$id}`}
+        className="flex items-center gap-3 p-4 border-b last:border-0 hover:bg-gray-50 transition-colors"
+      >
+        <SpaceAvatar
+          className="size-9 shrink-0"
+          name={space.name}
+          image={space.imageUrl}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-gray-900 truncate">{space.name}</span>
+            <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-1 shrink-0">
+              {getStatusIcon(status)}
+              <span className="text-xs">{status}</span>
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  progress.percentage === 100 ? "bg-emerald-600" : "bg-blue-600"
+                )}
+                style={{ width: `${progress.percentage}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-500 shrink-0">{progress.percentage}%</span>
+          </div>
+        </div>
+        <ChevronRight size={16} className="text-gray-400 shrink-0" />
+      </Link>
+    );
+  };
 
   const renderSpaceRow = (space: any) => {
     const progress = spaceProgressMap.get(space.$id) || { percentage: 0, completed: 0, total: 0 };
@@ -227,33 +268,41 @@ export const SpacesListClient = () => {
             {activeExpanded && (
               <div className="border rounded-lg overflow-hidden">
                 {activeSpaces.length > 0 ? (
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Space name
-                        </th>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Space status
-                        </th>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Progress
-                        </th>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Start date
-                        </th>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Due date
-                        </th>
-                        <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Space owner
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y bg-white">
-                      {activeSpaces.map(renderSpaceRow)}
-                    </tbody>
-                  </table>
+                  <>
+                    {/* Mobile card list */}
+                    <div className="md:hidden divide-y">
+                      {activeSpaces.map(renderSpaceCard)}
+                    </div>
+
+                    {/* Desktop table */}
+                    <table className="hidden md:table w-full">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Space name
+                          </th>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Space status
+                          </th>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Progress
+                          </th>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Start date
+                          </th>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Due date
+                          </th>
+                          <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Space owner
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y bg-white">
+                        {activeSpaces.map(renderSpaceRow)}
+                      </tbody>
+                    </table>
+                  </>
                 ) : (
                   <div className="p-8 text-center text-muted-foreground">
                     <p>No active spaces yet. Create your first space to get started!</p>
@@ -284,7 +333,13 @@ export const SpacesListClient = () => {
 
               {closedExpanded && (
                 <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
+                  {/* Mobile card list */}
+                  <div className="md:hidden divide-y">
+                    {closedSpaces.map(renderSpaceCard)}
+                  </div>
+
+                  {/* Desktop table */}
+                  <table className="hidden md:table w-full">
                     <thead className="bg-gray-50 border-b">
                       <tr>
                         <th className="text-left p-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { Sidebar } from "./Sidebar";
 import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 export const MobileSidebar = () => {
     const [isOpen, setIsOpen ] = useState(false);
@@ -23,7 +23,8 @@ export const MobileSidebar = () => {
                     <MenuIcon className="size-4 text-neutral-500" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[264px] sm:w-[280px] bg-[#1e3a5f] border-r border-white/10">
+            <SheetContent side="left" className="p-0 w-[264px] sm:w-[280px] bg-white border-r border-gray-100">
+                <SheetTitle className="sr-only">Navigation</SheetTitle>
                 <Sidebar />
             </SheetContent>
         </Sheet>

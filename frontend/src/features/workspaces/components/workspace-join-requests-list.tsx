@@ -1,75 +1,107 @@
-import { Check, X } from "lucide-react";
+"use client";
+
+import { Check, X, Shield, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-
+import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetJoinRequests } from "../api/use-get-join-requests";
 import { useResolveJoinRequest } from "../api/use-resolve-join-request";
 
 export const WorkspaceJoinRequestsList = () => {
-    const workspaceId = useWorkspaceId();
-    const { data: requests, isLoading } = useGetJoinRequests({ workspaceId });
-    const { mutate: resolveRequest, isPending } = useResolveJoinRequest();
+  const workspaceId = useWorkspaceId();
+  const { data: requests, isLoading } = useGetJoinRequests({ workspaceId });
+  const { mutate: resolveRequest, isPending } = useResolveJoinRequest();
 
-    const handleResolve = (requestId: string, approved: boolean) => {
-        resolveRequest({ workspaceId, requestId, approved });
-    };
-
-    if (isLoading) return <div>Loading requests...</div>;
-
-    return (
-        <Card className="w-full h-full border-none shadow-none">
-            <CardHeader className="flex flex-row items-center gap-x-4 p-7 space-y-0">
-                <CardTitle className="text-xl font-bold">
-                    Join Requests
-                </CardTitle>
-            </CardHeader>
-            <div className="px-7">
-                <Separator />
-            </div>
-            <CardContent className="p-7">
-                {requests?.documents.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center">No pending join requests.</p>
-                )}
-                {requests?.documents.map((request, index) => (
-                    <div key={request.id}>
-                        <div className="flex items-center gap-2">
-                            <div className="flex flex-col">
-                                <p className="text-sm font-medium">{request.user?.name || "Anonymous"}</p>
-                                <p className="text-xs text-muted-foreground">{request.user?.email}</p>
-                            </div>
-                            <div className="ml-auto flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleResolve(request.id, true)}
-                                    disabled={isPending}
-                                    className="text-emerald-600 hover:text-emerald-700"
-                                >
-                                    <Check className="size-4 mr-2" />
-                                    Approve
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleResolve(request.id, false)}
-                                    disabled={isPending}
-                                    className="text-amber-700 hover:text-amber-800"
-                                >
-                                    <X className="size-4 mr-2" />
-                                    Reject
-                                </Button>
-                            </div>
-                        </div>
-                        {index < requests.documents.length - 1 && (
-                            <Separator className="my-2.5" />
-                        )}
-                    </div>
-                ))}
-            </CardContent>
-        </Card>
+  const handleResolve = (requestId: string, approved: boolean) => {
+    resolveRequest(
+      { workspaceId, requestId, approved },
+      {
+        onSuccess: () => {
+          toast.success(approved ? "Request approved" : "Request declined");
+        },
+      }
     );
+  };
+
+  const requestList = requests?.documents ?? [];
+
+  return (
+    <section className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">
+            Join Requests
+            {requestList.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center size-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                {requestList.length}
+              </span>
+            )}
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Review and approve pending workspace access requests.
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="p-10 text-center text-sm text-gray-400">Loading requests…</div>
+      ) : requestList.length === 0 ? (
+        <div className="p-10 text-center">
+          <div className="size-12 rounded-xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+            <UserCheck size={20} className="text-gray-300" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">No pending requests</p>
+          <p className="text-xs text-gray-400 mt-1">
+            New join requests will appear here for your review.
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {requestList.map((request: any) => (
+            <div
+              key={request.id}
+              className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/60 transition-colors"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <MemberAvatar
+                  className="size-9 shrink-0"
+                  name={request.user?.name || request.user?.email || "Anonymous"}
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {request.user?.name || "Anonymous"}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">{request.user?.email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 ml-4">
+                <Button
+                  size="sm"
+                  onClick={() => handleResolve(request.id, false)}
+                  disabled={isPending}
+                  variant="outline"
+                  className="h-8 text-xs border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 gap-1.5"
+                >
+                  <X size={13} />
+                  Decline
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleResolve(request.id, true)}
+                  disabled={isPending}
+                  className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                >
+                  <Check size={13} />
+                  Approve
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 };

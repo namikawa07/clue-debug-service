@@ -32,34 +32,31 @@ export const SpaceIdClient = () => {
     return <PageError message="Space not found" />;
   }
 
-  console.log(
-    " 📝 space.imageUrl ? ☑️",
-    space?.imageUrl
-  );
   return (
-    <div className="flex flex-col gap-y-4">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
+        <div className="flex items-center gap-3">
           <SpaceAvatar
             name={space.name}
             image={space.imageUrl}
-            className="size-8"
+            className="size-10"
           />
-          <p className="text-lg font-semibold">{space.name}</p>
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">{space.name}</h1>
+            {space.description && (
+              <p className="text-sm text-gray-500 mt-0.5">{space.description}</p>
+            )}
+          </div>
         </div>
-        <div>
-          <Button variant="secondary" size="sm" asChild>
-            <Link
-              href={`/workspaces/${space.workspaceId}/spaces/${space.id}/settings`}
-            >
-              <PencilIcon className="size-4 mr-2" />
-              Edit Space
-            </Link>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" asChild className="border-gray-200 text-gray-600 hover:bg-gray-50">
+          <Link href={`/workspaces/${space.workspaceId}/spaces/${space.id}/settings`}>
+            <PencilIcon className="size-3.5 mr-2" />
+            Edit Space
+          </Link>
+        </Button>
       </div>
       {analytics ? <Analytics data={analytics} /> : null}
-      <TaskViewSwitcher hideProjectFilter />
+      <TaskViewSwitcher hideSpaceFilter />
     </div>
   );
 };

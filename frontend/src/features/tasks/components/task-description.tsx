@@ -3,7 +3,6 @@ import { PencilIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { DottedSeparator } from "@/components/dotted-separator";
 
 import { Task } from "../types";
 import { useUpdateTask } from "../api/use-update-task";
@@ -30,45 +29,47 @@ export const TaskDescription = ({ task }: TaskDescriptionProps) => {
   };
 
   return (
-    <div className="p-4 border rounded-lg">
-      <div className="flex items-center justify-between">
-        <p className="text-lg font-semibold">Overview</p>
+    <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-semibold text-gray-900">Description</p>
         <Button
           onClick={() => setIsEditing((prev) => !prev)}
           size="sm"
-          variant="secondary"
+          variant="outline"
+          className="h-8 text-xs border-gray-200 gap-1.5"
         >
           {isEditing ? (
-            <XIcon className="size-4 mr-2" />
+            <XIcon size={12} />
           ) : (
-            <PencilIcon className="size-4 mr-2" />
+            <PencilIcon size={12} />
           )}
           {isEditing ? "Cancel" : "Edit"}
         </Button>
       </div>
-      <DottedSeparator className="my-4" />
+
       {isEditing ? (
-        <div className="flex flex-col gap-y-4">
-            <Textarea
-                placeholder="Add a description"
-                value={value}
-                rows={4}
-                onChange={(e) => setValue(e.target.value)}
-                disabled={isPending}
-            />
-            <Button
-                size="sm"
-                className="w-fit ml-auto"
-                onClick={handleSave}
-                disabled={isPending}
-            >
-                {isPending ? "Saving..." : "Save Changes"}
-            </Button>
+        <div className="flex flex-col gap-y-3">
+          <Textarea
+            placeholder="Add a description…"
+            value={value}
+            rows={5}
+            onChange={(e) => setValue(e.target.value)}
+            disabled={isPending}
+            className="border-gray-200 text-sm resize-none focus-visible:ring-blue-500"
+          />
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isPending}
+            className="w-fit ml-auto bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs"
+          >
+            {isPending ? "Saving…" : "Save Changes"}
+          </Button>
         </div>
       ) : (
-        <div>
+        <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
           {task.description || (
-            <span className="text-muted-foreground">No Description set</span>
+            <span className="text-gray-400 italic">No description yet. Click Edit to add one.</span>
           )}
         </div>
       )}

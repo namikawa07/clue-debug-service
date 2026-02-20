@@ -12,6 +12,7 @@ interface useGetTasksProps {
     spaceId?: string | null;
     status?: TaskStatus | null;
     assigneeId?: string | null;
+    creatorId?: string | null;
     search?: string | null;
     dueDate?: string | null;
 }
@@ -21,11 +22,12 @@ export const useGetTasks = ({
     spaceId,
     status,
     assigneeId,
+    creatorId,
     search,
     dueDate,
 }: useGetTasksProps) => {
     const query = useQuery({
-        queryKey: ["tasks", workspaceId, spaceId, status, search, assigneeId, dueDate],
+        queryKey: ["tasks", workspaceId, spaceId, status, search, assigneeId, creatorId, dueDate],
         queryFn: async () => {
             // Determine endpoint based on scope
             const endpoint = spaceId
@@ -36,6 +38,7 @@ export const useGetTasks = ({
             const params: Record<string, any> = {};
             if (status) params.status = status;
             if (assigneeId) params.assigned_to = assigneeId;
+            if (creatorId) params.created_by = creatorId;
             if (search) params.search = search;
             // Note: dueDate filtering is not yet supported by backend API
 

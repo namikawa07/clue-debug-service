@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRightIcon, TrashIcon } from "lucide-react";
+import { ChevronRight, Trash2 } from "lucide-react";
 
 import { Space } from "@/features/spaces/types";
 import { SpaceAvatar } from "@/features/spaces/components/space-avatar";
@@ -43,32 +43,30 @@ export const TaskBreadcrumbs = ({
     };
 
     return (
-        <div className="flex items-center gap-x-2">
+        <div className="flex items-center gap-2">
             <ConfirmDialog />
             <SpaceAvatar
                 name={space.name}
                 image={space.imageUrl}
-                className="size-6 lg:size-8"
+                className="size-6 shrink-0"
             />
             <Link href={`/workspaces/${workspaceId}/spaces/${space.$id}`}>
-                <p className="text-sm lg:text-lg font-semibold text-muted-foreground hover:opacity-75 transition">
+                <span className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
                     {space.name}
-                </p>
+                </span>
             </Link>
-            <ChevronRightIcon className="size-4 lg:size-5 text-muted-foreground" />
-
-            <p className="text-sm lg:text-lg font-semibold">
+            <ChevronRight size={14} className="text-gray-300 shrink-0" />
+            <span className="text-sm font-semibold text-gray-900 truncate">
                 {task.name}
-            </p>
+            </span>
             <Button
                 onClick={handleDeleteTask}
                 disabled={isPending}
-                className="ml-auto"
-                variant="destructive"
+                className="ml-auto shrink-0 h-8 text-xs gap-1.5 bg-red-600 hover:bg-red-700 text-white"
                 size="sm"
             >
-                <TrashIcon className="size-4 lg:mr-2" />
-                <span className="hidden lg:block">Delete Task</span>
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">Delete Task</span>
             </Button>
         </div>
     );

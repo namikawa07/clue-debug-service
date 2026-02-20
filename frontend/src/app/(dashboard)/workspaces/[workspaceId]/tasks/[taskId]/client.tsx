@@ -8,35 +8,25 @@ import { TaskDescription } from "@/features/tasks/components/task-description";
 
 import { PageError } from "@/components/page-error";
 import { PageLoader } from "@/components/page-loader";
-import { DottedSeparator } from "@/components/dotted-separator";
 
 export const TaskIdClient = () => {
     const taskId = useTaskId();
     const { data, isLoading } = useGetTask({ taskId });
 
-    if (isLoading) {
-        return <PageLoader />;
-    }
+    if (isLoading) return <PageLoader />;
+    if (!data) return <PageError message="Task not found" />;
 
-    if (!data) {
-        return <PageError message="Task not found" />;
-    }
+    const space = (data as any).project;
 
     return (
-        <div className="flex flex-col">
-            <TaskBreadcrumbs space={data.project as any || {
-                $id: "unknown",
-                $createdAt: "",
-                $updatedAt: "",
-                $collectionId: "Spaces",
-                $databaseId: "finepro",
-                $permissions: [],
-                name: "Unknown Space",
-                imageUrl: "",
-                workspaceId: ""
-            }} task={data} />
-            <DottedSeparator className="my-6" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-5">
+            <div className="bg-white border border-gray-100 rounded-xl shadow-sm px-5 py-4">
+                <TaskBreadcrumbs
+                    space={space || { $id: "", name: "Unknown Space", imageUrl: "", workspaceId: "" }}
+                    task={data}
+                />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <TaskOverview task={data} />
                 <TaskDescription task={data} />
             </div>

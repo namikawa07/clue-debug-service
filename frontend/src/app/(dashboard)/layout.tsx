@@ -2,7 +2,6 @@ import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
 import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
 import { CreateSpaceModal } from "@/features/spaces/components/create-space-modal";
 import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
-import { NameCheckWrapper } from "@/features/auth/components/NameCheckWrapper";
 import { OnboardingGuard } from "@/features/auth/components/OnboardingGuard";
 import { RealtimeWrapper } from "@/components/realtime-wrapper";
 
@@ -15,13 +14,8 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const isServer = typeof window === 'undefined';
-  if (isServer) {
-    console.log(`[SSR] [DashboardLayout] Start rendering at ${new Date().toISOString()}`);
-  }
-
-  const render = (
-    <div className="min-h-screen bg-neutral-50">
+  return (
+    <div className="min-h-screen bg-gray-50">
       <OnboardingGuard />
       <CreateWorkspaceModal />
       <CreateSpaceModal />
@@ -29,26 +23,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <EditTaskModal />
       <RealtimeWrapper>
         <div className="flex w-full h-screen">
-          {/* Sidebar - w-56 (224px) to match snippet */}
-          <div className="fixed left-0 top-0 hidden lg:block lg:w-56 h-full overflow-y-auto border-r border-gray-200 bg-white z-30">
+          {/* Sidebar — fixed, 224 px wide */}
+          <div className="fixed left-0 top-0 hidden lg:flex lg:w-56 h-full z-30">
             <Sidebar />
           </div>
-          {/* Main content area - pl-56 */}
-          <div className="lg:pl-56 w-full flex flex-col h-screen">
+
+          {/* Main content area */}
+          <div className="lg:pl-56 w-full flex flex-col h-screen overflow-hidden">
             <Navbar />
-            <main className="flex-1 overflow-y-auto py-6 px-6">{children}</main>
+            <main className="flex-1 overflow-y-auto p-6">
+              {children}
+            </main>
           </div>
         </div>
       </RealtimeWrapper>
       <AIChat />
     </div>
   );
-
-  if (isServer) {
-    console.log(`[SSR] [DashboardLayout] Finish rendering at ${new Date().toISOString()}`);
-  }
-
-  return render;
 };
 
 export default DashboardLayout;

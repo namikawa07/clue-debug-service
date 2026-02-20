@@ -1,7 +1,6 @@
 import { PencilIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DottedSeparator } from "@/components/dotted-separator";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 
 import { Task } from "../types";
@@ -20,24 +19,28 @@ export const TaskOverview = ({ task }: TaskOverviewProps) => {
 
   return (
     <div className="flex flex-col gap-y-4 col-span-1">
-      <div className="bg-muted rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Overview</p>
-          <Button onClick={() => open(task.$id)} size="sm" variant="secondary">
-            <PencilIcon className="size-4 mr-2" />
+      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-semibold text-gray-900">Overview</p>
+          <Button
+            onClick={() => open(task.$id)}
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs border-gray-200 gap-1.5"
+          >
+            <PencilIcon size={12} />
             Edit
           </Button>
         </div>
-        <DottedSeparator className="my-4" />
-        <div className="flex flex-col gap-y-4">
+        <div className="flex flex-col gap-y-3">
           <OverviewProperty label="Assignee">
             <MemberAvatar
               name={task.assignee?.name || task.assignee?.email || "Unknown"}
               className="size-6"
               avatarColor={task.assignee?.avatarColor}
             />
-            <p className="text-sm font-medium">
-              {task.assignee?.name || task.assignee?.email || "Unknown"}
+            <p className="text-sm font-medium text-gray-700">
+              {task.assignee?.name || task.assignee?.email || "Unassigned"}
             </p>
           </OverviewProperty>
           <OverviewProperty label="Due Date">

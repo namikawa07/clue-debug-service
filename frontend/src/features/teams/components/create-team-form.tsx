@@ -49,14 +49,8 @@ export const CreateTeamForm = ({
   });
 
   const onSubmit = (values: z.infer<typeof createTeamSchema>) => {
-    const finalValues = {
-      ...values,
-      workspaceId,
-      image: values.image instanceof File ? values.image : "",
-    };
-
     mutate(
-      { json: finalValues },
+      { workspaceId, name: values.name, description: values.description },
       {
         onSuccess: () => {
           form.reset();
