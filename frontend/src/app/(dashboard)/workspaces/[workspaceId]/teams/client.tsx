@@ -4,6 +4,7 @@ import { useGetTeams } from "@/features/teams/api/use-get-teams";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCreateTeamModal } from "@/features/teams/hooks/use-create-team-modal";
 import { TeamAvatar } from "@/features/teams/components/team-avatar";
+import { AvatarGroupStack } from "@/features/members/components/avatar-group-stack";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Team } from "@/features/teams/types";
@@ -111,9 +112,18 @@ export const TeamsListClient = () => {
                         </span>
                       </td>
                       <td className="p-3">
-                        <span className="text-sm text-gray-700">
-                          {team.memberIds?.length || team.members?.length || 0} {(team.memberIds?.length || team.members?.length) === 1 ? "member" : "members"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <AvatarGroupStack
+                            members={(team.members || []).map((m: any) => ({
+                              name: m.name || "Unknown",
+                            }))}
+                            max={3}
+                            size="sm"
+                          />
+                          <span className="text-xs text-gray-500">
+                            {team.memberIds?.length || team.members?.length || 0}
+                          </span>
+                        </div>
                       </td>
                       <td className="p-3 text-sm text-gray-700">
                         {team.$createdAt ? format(new Date(team.$createdAt), "d MMM yyyy") : "-"}

@@ -27,7 +27,7 @@ export const sessionMiddleware = createMiddleware<AdditionalContext>(
             },
             global: {
                 headers: {
-                    cookie: c.req.header("cookie")
+                    cookie: c.req.header("cookie") ?? ""
                 }
             }
         });

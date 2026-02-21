@@ -51,7 +51,7 @@ const SpaceItem = ({ space, workspaceId }: SpaceItemProps) => {
       >
         {/* Expand/collapse toggle */}
         <button
-          onClick={() => setIsExpanded((p) => !p)}
+          onClick={() => setIsExpanded((p: boolean) => !p)}
           className="shrink-0 text-gray-400 hover:text-gray-600 p-0.5"
           aria-label={isExpanded ? "Collapse" : "Expand"}
         >

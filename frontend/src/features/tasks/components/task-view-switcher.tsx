@@ -11,6 +11,9 @@ import {
   Clock,
   Filter,
   Search,
+  Layers,
+  ListTree,
+  BarChart3,
 } from "lucide-react";
 
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -24,17 +27,20 @@ import { DataSpreadsheet } from "./data-spreadsheet";
 import { DataKanban } from "./data-kanban";
 import { DataCalendar } from "./data-calendar";
 import { DataWeeklySchedule } from "./data-weekly-schedule";
+import { DataGantt } from "./data-gantt";
+import { BulkActionBar } from "./bulk-action-bar";
 
 import { useGetTasks } from "../api/use-get-tasks";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { useCreateTaskModel } from "../hooks/use-create-task-modal";
 import { useBulkUpdateTasks } from "../api/use-bulk-update-tasks";
 import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
+import { useGetEpics } from "@/features/epics/api/use-get-epics";
 import { TaskStatus } from "../types";
 
 interface TaskViewSwitcherProps {
   hideSpaceFilter?: boolean;
-  epicId?: string;  // When provided, show tasks scoped to this epic
+  epicId?: string;
 }
 
 const VIEW_TABS = [
@@ -42,6 +48,7 @@ const VIEW_TABS = [
   { key: "list", label: "Spreadsheet", icon: LayoutList },
   { key: "timeline", label: "Timeline", icon: Clock },
   { key: "calendar", label: "Calendar", icon: Calendar },
+  { key: "gantt", label: "Gantt", icon: BarChart3 },
 ] as const;
 
 export const TaskViewSwitcher = ({
@@ -51,9 +58,14 @@ export const TaskViewSwitcher = ({
   const [{ status, assigneeId, spaceId, dueDate, creatorId, search }, setFilters] =
     useTaskFilters();
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
 
   const [view, setView] = useQueryState("task-view", {
     defaultValue: "kanban",
+  });
+
+  const [groupBy, setGroupBy] = useQueryState("group-by", {
+    defaultValue: "epic",
   });
 
   const workspaceId = useWorkspaceId();
@@ -62,9 +74,12 @@ export const TaskViewSwitcher = ({
 
   const { mutate: bulkUpdate } = useBulkUpdateTasks();
 
+  const effectiveSpaceId = epicId ? undefined : (paramSpaceId || spaceId);
+  const { data: epics } = useGetEpics({ spaceId: effectiveSpaceId || paramSpaceId });
+
   const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
     workspaceId,
-    spaceId: epicId ? undefined : (paramSpaceId || spaceId),
+    spaceId: effectiveSpaceId,
     epicId: epicId ?? undefined,
     assigneeId,
     status,
@@ -86,11 +101,44 @@ export const TaskViewSwitcher = ({
     Boolean
   ).length;
 
+  const handleToggleTask = useCallback((taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(
+    (ids: string[]) => {
+      setSelectedTaskIds((prev) => {
+        const allSelected = ids.every((id) => prev.has(id));
+        if (allSelected) {
+          const next = new Set(prev);
+          ids.forEach((id) => next.delete(id));
+          return next;
+        }
+        return new Set([...prev, ...ids]);
+      });
+    },
+    []
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTaskIds(new Set());
+  }, []);
+
+  const currentGroupBy = (groupBy === "status" ? "status" : "epic") as "status" | "epic";
+
   return (
     <div className="flex-1 w-full flex flex-col h-full">
       {/* View tabs row */}
       <div className="flex items-center justify-between border-b border-gray-200">
-        {/* Tabs — horizontal scroll on mobile, icon-only on xs */}
+        {/* Tabs */}
         <div className="flex items-center gap-1 sm:gap-4 overflow-x-auto px-2">
           {VIEW_TABS.map((tab) => {
             const Icon = tab.icon;
@@ -121,7 +169,7 @@ export const TaskViewSwitcher = ({
         </div>
       </div>
 
-      {/* Search + Filter toggle — always visible, stacks on mobile */}
+      {/* Search + Filter + GroupBy toggle */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-2 py-2 border-b border-gray-200">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
@@ -132,7 +180,36 @@ export const TaskViewSwitcher = ({
             className="pl-9 pr-4 h-8 w-full bg-white border-gray-300 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 rounded-md"
           />
         </div>
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Group by toggle */}
+          {(view === "list" || view === "kanban") && (
+            <div className="flex items-center rounded-md border border-gray-300 overflow-hidden h-8">
+              <button
+                onClick={() => setGroupBy("status")}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 h-full text-xs font-medium transition-colors",
+                  currentGroupBy === "status"
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50"
+                )}
+              >
+                <ListTree size={12} />
+                <span className="hidden sm:inline">Status</span>
+              </button>
+              <button
+                onClick={() => setGroupBy("epic")}
+                className={cn(
+                  "flex items-center gap-1 px-2.5 h-full text-xs font-medium transition-colors border-l border-gray-300",
+                  currentGroupBy === "epic"
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50"
+                )}
+              >
+                <Layers size={12} />
+                <span className="hidden sm:inline">Epic</span>
+              </button>
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -161,7 +238,7 @@ export const TaskViewSwitcher = ({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 relative">
         {isLoadingTasks ? (
           <div className="w-full h-full flex flex-col items-center justify-center">
             <Loader className="size-8 animate-spin text-blue-500 mb-4" />
@@ -170,12 +247,21 @@ export const TaskViewSwitcher = ({
         ) : (
           <>
             {view === "list" && (
-              <DataSpreadsheet data={tasks?.documents ?? []} />
+              <DataSpreadsheet
+                data={tasks?.documents ?? []}
+                groupBy={currentGroupBy}
+                epics={epics ?? []}
+                selectedTaskIds={selectedTaskIds}
+                onToggleTask={handleToggleTask}
+                onSelectAll={handleSelectAll}
+              />
             )}
             {view === "kanban" && (
               <DataKanban
                 onChange={onKanbanChange}
                 data={tasks?.documents ?? []}
+                groupBy={currentGroupBy}
+                epics={epics ?? []}
               />
             )}
             {view === "calendar" && (
@@ -184,7 +270,23 @@ export const TaskViewSwitcher = ({
             {view === "timeline" && (
               <DataWeeklySchedule data={tasks?.documents ?? []} />
             )}
+            {view === "gantt" && (
+              <DataGantt
+                data={tasks?.documents ?? []}
+                epics={epics ?? []}
+              />
+            )}
           </>
+        )}
+
+        {/* Bulk action bar */}
+        {selectedTaskIds.size > 0 && (
+          <BulkActionBar
+            selectedCount={selectedTaskIds.size}
+            selectedTaskIds={selectedTaskIds}
+            tasks={tasks?.documents ?? []}
+            onClearSelection={handleClearSelection}
+          />
         )}
       </div>
     </div>

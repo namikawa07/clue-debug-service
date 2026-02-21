@@ -7,9 +7,10 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 
-import { Task, TaskStatus } from "../types";
+import { Task, TaskStatus, Epic } from "../types";
 import { KanbanColumnHeader } from "./kanban-column-header";
 import { KanbanCard } from "./kanban-card";
+import { Layers } from "lucide-react";
 
 // Map design columns to task statuses
 const columnStatusMap: Record<string, TaskStatus[]> = {
@@ -19,17 +20,15 @@ const columnStatusMap: Record<string, TaskStatus[]> = {
   "completed": [TaskStatus.DONE],
 };
 
-// Reverse map: status to column
 const statusToColumn = (status: TaskStatus): string => {
   for (const [column, statuses] of Object.entries(columnStatusMap)) {
     if (statuses.includes(status)) {
       return column;
     }
   }
-  return "new-task"; // fallback
+  return "new-task";
 };
 
-// Map column to target status when dropping
 const columnToStatus = (column: string): TaskStatus => {
   const statuses = columnStatusMap[column];
   return statuses[0] || TaskStatus.TODO;
@@ -44,9 +43,21 @@ type ColumnTasks = {
 interface DataKanbanProps {
   data: Task[];
   onChange: (tasks: { $id: string; status: TaskStatus; position: number; }[]) => void;
+  groupBy?: "status" | "epic";
+  epics?: Epic[];
 }
 
-export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
+// Epic header shown above task cards when groupBy=epic
+function EpicHeader({ epicName }: { epicName: string }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 mb-1 rounded bg-indigo-50 border border-indigo-100">
+      <Layers size={12} className="text-indigo-400" />
+      <span className="text-xs font-medium text-indigo-700 truncate">{epicName}</span>
+    </div>
+  );
+}
+
+export const DataKanban = ({ data, onChange, groupBy = "status", epics = [] }: DataKanbanProps) => {
   const [tasks, setTasks] = useState<ColumnTasks>(() => {
     const initialTasks: ColumnTasks = {
       "new-task": [],
@@ -68,6 +79,15 @@ export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
 
     return initialTasks;
   });
+
+  // Build epic lookup
+  const epicMap = useMemo(() => {
+    const map = new Map<string, Epic>();
+    for (const epic of epics) {
+      map.set(epic.id, epic);
+    }
+    return map;
+  }, [epics]);
 
   useEffect(() => {
     const newTasks: ColumnTasks = {
@@ -111,26 +131,21 @@ export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
         return prevTasks;
       }
 
-      // Determine new status based on destination column
       const newStatus = columnToStatus(destColumn);
       const updatedMovedTask = { ...movedTask, status: newStatus };
 
-      // Update the source column
       newTasks[sourceColumn] = sourceTasks;
 
-      // Add the task to the destination column
       const destTasks = [...newTasks[destColumn]];
       destTasks.splice(destination.index, 0, updatedMovedTask);
       newTasks[destColumn] = destTasks;
 
-      // Always update the moved task
       updatesPayload.push({
         $id: updatedMovedTask.$id,
         status: newStatus,
         position: Math.min((destination.index + 1) * 1000, 1_000_000)
       });
 
-      // Update positions for affected tasks in the destination column
       newTasks[destColumn].forEach((task, index) => {
         if (task && task.$id !== updatedMovedTask.$id) {
           const newPosition = Math.min((index + 1) * 1000, 1_000_000);
@@ -144,7 +159,6 @@ export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
         }
       });
 
-      // If the task moved between columns, update positions in the source column
       if (sourceColumn !== destColumn) {
         newTasks[sourceColumn].forEach((task, index) => {
           if (task) {
@@ -166,11 +180,44 @@ export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
     onChange(updatesPayload);
   }, [onChange]);
 
+  // Group column tasks by epic for rendering epic headers
+  const getEpicGroupedColumnTasks = useCallback(
+    (columnTasks: Task[]) => {
+      if (groupBy !== "epic" || epics.length === 0) return null;
+
+      const groups: { epicName: string; tasks: Task[] }[] = [];
+      const epicBuckets = new Map<string, Task[]>();
+      const ungrouped: Task[] = [];
+
+      for (const task of columnTasks) {
+        const epicId = (task as any).epicId || (task as any).epic_id;
+        if (epicId && epicMap.has(epicId)) {
+          if (!epicBuckets.has(epicId)) epicBuckets.set(epicId, []);
+          epicBuckets.get(epicId)!.push(task);
+        } else {
+          ungrouped.push(task);
+        }
+      }
+
+      for (const [epicId, tasks] of epicBuckets) {
+        groups.push({ epicName: epicMap.get(epicId)?.name ?? "Unknown", tasks });
+      }
+      if (ungrouped.length > 0) {
+        groups.push({ epicName: "Ungrouped", tasks: ungrouped });
+      }
+
+      return groups;
+    },
+    [groupBy, epics, epicMap]
+  );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex overflow-x-auto gap-4 pb-4 min-w-0">
         {boards.map((board) => {
           const columnTasks = tasks[board] || [];
+          const epicGroups = getEpicGroupedColumnTasks(columnTasks);
+
           return (
             <div
               key={board}
@@ -191,6 +238,32 @@ export const DataKanban = ({ data, onChange }: DataKanbanProps) => {
                       <div className="text-center py-8 text-sm text-muted-foreground">
                         No tasks
                       </div>
+                    ) : epicGroups ? (
+                      // Render with epic headers
+                      (() => {
+                        let globalIndex = 0;
+                        return epicGroups.map((group) => (
+                          <div key={group.epicName} className="mb-2">
+                            <EpicHeader epicName={group.epicName} />
+                            {group.tasks.map((task) => {
+                              const idx = globalIndex++;
+                              return (
+                                <Draggable key={task.$id} draggableId={task.$id} index={idx}>
+                                  {(provided) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <KanbanCard task={task} />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                          </div>
+                        ));
+                      })()
                     ) : (
                       columnTasks.map((task, index) => (
                         <Draggable key={task.$id} draggableId={task.$id} index={index}>

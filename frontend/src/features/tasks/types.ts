@@ -49,6 +49,9 @@ export type Epic = {
     name: string;
     status: string;
     space_id: string;
+    task_count?: number;
+    completed_task_count?: number;
+    completion_percentage?: number;
     created_at?: string;
     updated_at?: string;
 };

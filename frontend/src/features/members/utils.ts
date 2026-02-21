@@ -1,5 +1,4 @@
-import { createSessionClient } from "@/lib/supabase";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/config";
+import { supabase } from "@/lib/supabase";
 
 interface GetMemberProps {
   workspaceId: string;
@@ -17,5 +16,5 @@ export const getMember = async ({
 };
 
 export const createSupabaseClient = () => {
-  return createSessionClient();
+  return supabase;
 };

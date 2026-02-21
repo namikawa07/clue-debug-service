@@ -24,7 +24,7 @@ export const WaitingList = ({ tasks }: WaitingListProps) => {
     const query = searchQuery.toLowerCase();
     return tasks.filter((task) => 
       task.name.toLowerCase().includes(query) ||
-      task.project?.name.toLowerCase().includes(query)
+      task.space?.name?.toLowerCase().includes(query)
     );
   }, [tasks, searchQuery]);
 

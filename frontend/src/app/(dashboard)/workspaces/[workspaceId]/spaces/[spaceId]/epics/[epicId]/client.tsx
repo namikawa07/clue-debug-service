@@ -9,7 +9,8 @@ import { TaskViewSwitcher } from "@/features/tasks/components/task-view-switcher
 import { PageLoader } from "@/components/page-loader";
 
 export const EpicIdClient = () => {
-  const { epicId } = useParams<{ epicId: string }>();
+  const params = useParams();
+  const epicId = params.epicId as string;
   const spaceId = useSpaceId();
 
   // Load epics for this space to find the current epic's title
@@ -27,11 +28,8 @@ export const EpicIdClient = () => {
         </div>
         <div>
           <h1 className="text-xl font-semibold text-gray-900">
-            {epic?.title ?? epic?.name ?? "Epic"}
+            {epic?.name ?? "Epic"}
           </h1>
-          {epic?.description && (
-            <p className="text-sm text-gray-500 mt-0.5">{epic.description}</p>
-          )}
         </div>
       </div>
 
