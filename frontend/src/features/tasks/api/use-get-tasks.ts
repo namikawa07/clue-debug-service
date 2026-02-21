@@ -10,6 +10,7 @@ const isValidStatus = (status: string): status is TaskStatus => {
 interface useGetTasksProps {
     workspaceId: string;
     spaceId?: string | null;
+    epicId?: string | null;  // When set, fetch tasks scoped to a single epic
     status?: TaskStatus | null;
     assigneeId?: string | null;
     creatorId?: string | null;
@@ -20,6 +21,7 @@ interface useGetTasksProps {
 export const useGetTasks = ({
     workspaceId,
     spaceId,
+    epicId,
     status,
     assigneeId,
     creatorId,
@@ -27,10 +29,12 @@ export const useGetTasks = ({
     dueDate,
 }: useGetTasksProps) => {
     const query = useQuery({
-        queryKey: ["tasks", workspaceId, spaceId, status, search, assigneeId, creatorId, dueDate],
+        queryKey: ["tasks", workspaceId, spaceId, epicId, status, search, assigneeId, creatorId, dueDate],
         queryFn: async () => {
-            // Determine endpoint based on scope
-            const endpoint = spaceId
+            // Scope priority: epic > space > workspace
+            const endpoint = epicId
+                ? `/epics/${epicId}/tasks`
+                : spaceId
                 ? `/spaces/${spaceId}/tasks`
                 : `/workspaces/${workspaceId}/tasks`;
 

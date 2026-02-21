@@ -46,3 +46,10 @@ class EpicResponse(EpicBase):
 class EpicWithTasks(EpicResponse):
     """Epic with its tasks included"""
     tasks: List[dict] = []  # Will be populated with TaskResponse dicts
+
+
+class EpicWithCountsResponse(EpicResponse):
+    """Epic with aggregated task statistics"""
+    task_count: int = 0
+    completed_task_count: int = 0
+    completion_percentage: float = 0.0

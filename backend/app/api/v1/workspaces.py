@@ -37,18 +37,24 @@ async def create_workspace(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new workspace"""
+    """Create a new workspace (one per user). Auto-creates a Common Space and General epic."""
     service = WorkspaceService(db)
     activity_service = ActivityService(db)
-    
+
     # Map request data to internal create model
     internal_data = WorkspaceCreate(
         **workspace_data.model_dump(),
         owner_id=current_user.id
     )
-    
-    workspace = await service.create(internal_data, current_user.id)
-    
+
+    try:
+        workspace = await service.create(internal_data, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc)
+        )
+
     # Log activity
     await activity_service.log(
         user_id=current_user.id,
@@ -57,7 +63,7 @@ async def create_workspace(
         entity_id=workspace.id,
         changes={"name": workspace.name}
     )
-    
+
     return workspace
 
 

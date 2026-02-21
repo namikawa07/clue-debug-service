@@ -34,6 +34,7 @@ import { TaskStatus } from "../types";
 
 interface TaskViewSwitcherProps {
   hideSpaceFilter?: boolean;
+  epicId?: string;  // When provided, show tasks scoped to this epic
 }
 
 const VIEW_TABS = [
@@ -45,6 +46,7 @@ const VIEW_TABS = [
 
 export const TaskViewSwitcher = ({
   hideSpaceFilter,
+  epicId,
 }: TaskViewSwitcherProps) => {
   const [{ status, assigneeId, spaceId, dueDate, creatorId, search }, setFilters] =
     useTaskFilters();
@@ -62,7 +64,8 @@ export const TaskViewSwitcher = ({
 
   const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
     workspaceId,
-    spaceId: paramSpaceId || spaceId,
+    spaceId: epicId ? undefined : (paramSpaceId || spaceId),
+    epicId: epicId ?? undefined,
     assigneeId,
     status,
     dueDate,

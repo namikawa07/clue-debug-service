@@ -14,7 +14,7 @@ class Task(Base):
 
     id = Column(String(10), primary_key=True, default=generate_task_id)
     space_id = Column(String(12), ForeignKey("spaces.id"), nullable=True)
-    epic_id = Column(String(10), ForeignKey("epics.id"), nullable=True)  # Can be standalone
+    epic_id = Column(String(10), ForeignKey("epics.id"), nullable=False, index=True)  # Required: tasks must belong to an epic
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     task_type = Column(SQLEnum(TaskType), default=TaskType.BACKEND)

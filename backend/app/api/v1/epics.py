@@ -9,21 +9,21 @@ from typing import List
 from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.schemas.epic import EpicCreate, EpicUpdate, EpicResponse
+from app.schemas.epic import EpicCreate, EpicUpdate, EpicResponse, EpicWithCountsResponse
 from app.services.epic_service import EpicService
 
 router = APIRouter()
 
 
-@router.get("/spaces/{space_id}/epics", response_model=List[EpicResponse])
+@router.get("/spaces/{space_id}/epics", response_model=List[EpicWithCountsResponse])
 async def list_space_epics(
     space_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all epics in a space"""
+    """List all epics in a space with task count statistics"""
     service = EpicService(db)
-    epics = await service.get_by_space(space_id)
+    epics = await service.get_by_space_with_counts(space_id)
     return epics
 
 

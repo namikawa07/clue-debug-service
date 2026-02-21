@@ -10,6 +10,7 @@ interface CreateTaskRequest {
         status: TaskStatus;
         workspaceId: string;
         spaceId: string;
+        epicId: string;  // Required: every task must belong to an epic
         dueDate: Date;
         assigneeId: string;
         description?: string;
@@ -34,6 +35,7 @@ export const useCreateTask = () => {
         mutationFn: async ({ json }) => {
             const {
                 spaceId,
+                epicId,
                 name,
                 status,
                 assigneeId,
@@ -49,12 +51,14 @@ export const useCreateTask = () => {
             } = json;
 
             if (!spaceId) throw new Error("Space ID is required");
+            if (!epicId) throw new Error("Epic is required — tasks must belong to an epic");
 
             const response = await api.post<any>(`/spaces/${spaceId}/tasks`, {
                 title: name,
                 description,
                 status: status,
                 priority,
+                epic_id: epicId,
                 assigned_to: assigneeId,
                 due_date: dueDate ? dueDate.toISOString() : null,
                 estimated_hours: duration,

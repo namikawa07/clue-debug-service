@@ -40,14 +40,14 @@ class TaskBase(BaseModel):
 
 
 class TaskCreateRequest(TaskBase):
-    epic_id: Optional[str] = None
+    epic_id: str  # Required: every task must belong to an epic
     assigned_to: Optional[str] = None
-    space_id: Optional[str] = None # Optional in request, logic might enforce it
+    space_id: Optional[str] = None  # Derived from the epic's space if omitted
     # created_by is inferred from current_user
 
 
 class TaskCreate(TaskBase):
-    epic_id: Optional[str] = None
+    epic_id: str  # Required
     assigned_to: Optional[str] = None
     space_id: Optional[str] = None
     created_by: str

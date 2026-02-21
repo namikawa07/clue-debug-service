@@ -53,7 +53,11 @@ async def get_team(
     team = await service.get_by_id(team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-        
+
+    member_service = MemberService(db)
+    if not await member_service.get_membership(current_user.id, team.workspace_id):
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+
     return team
 
 @router.patch("/teams/{team_id}", response_model=TeamResponse)

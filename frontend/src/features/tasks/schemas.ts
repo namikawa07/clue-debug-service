@@ -21,7 +21,7 @@ export const createTaskSchema = z.object({
     priority: z.enum(["critical", "high", "medium", "low"]).optional(),
     isUrgent: z.boolean().optional(),
     teamId: z.string().trim().optional(),
-    epicId: z.string().trim().optional(),
+    epicId: z.string().trim().min(1, "Epic is required"),
 });
 
 export const updateTaskSchema = createTaskSchema.partial();

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Float, Integer, Boolean, JSON, ARRAY, Text, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, Float, Integer, Boolean, JSON, ARRAY, Text, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -9,6 +9,9 @@ from ..utils.id_generator import generate_workspace_id, generate_invite_code
 
 class Workspace(Base):
     __tablename__ = "workspaces"
+    __table_args__ = (
+        UniqueConstraint('owner_id', name='uq_workspaces_owner_id'),
+    )
 
     id = Column(String(12), primary_key=True, default=generate_workspace_id)
     name = Column(String(255), nullable=False)

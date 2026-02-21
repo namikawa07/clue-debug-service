@@ -44,39 +44,28 @@ class TaskService:
         data: TaskCreate,
         user_id: str
     ) -> Task:
-        """Create a new task"""
-        # If no epic_id provided, get or create default epic for space
+        """Create a new task. epic_id is required."""
         epic_id = data.epic_id
         if not epic_id:
-            # Get default epic or first epic in space
-            result = await self.db.execute(
-                select(Epic).where(Epic.space_id == space_id).limit(1)
-            )
-            epic = result.scalar_one_or_none()
-            
-            if not epic:
-                # Create a default "Backlog" epic if none exists
-                from app.utils.id_generator import generate_epic_id
-                epic = Epic(
-                    id=generate_epic_id(),
-                    space_id=space_id,
-                    name="Backlog",
-                    description="Default backlog for space tasks",
-                    status="todo",
-                    created_by=user_id
-                )
-                self.db.add(epic)
-                await self.db.commit()
-                await self.db.refresh(epic)
-                
-            epic_id = epic.id
-        
+            raise ValueError("epic_id is required. Tasks must belong to an epic.")
+
+        # Validate the epic exists and belongs to the given space
+        result = await self.db.execute(
+            select(Epic).where(Epic.id == epic_id)
+        )
+        epic = result.scalar_one_or_none()
+        if not epic:
+            raise ValueError(f"Epic '{epic_id}' not found.")
+
+        # Derive space_id from the epic if not provided
+        effective_space_id = space_id or str(epic.space_id)
+
         # Get next position
         position = await self._get_next_position(epic_id)
         
         task = Task(
             epic_id=epic_id,
-            space_id=space_id,
+            space_id=effective_space_id,
             title=data.title,
             description=data.description,
             task_type=data.task_type,

@@ -76,14 +76,14 @@ export const CreateTaskForm = ({
   const { data: epics, isLoading: isLoadingEpics } = useGetEpics({ spaceId });
 
   const onSubmit = (values: z.infer<typeof createTaskSchema>) => {
-
     mutate(
-      { json: { ...values, workspaceId } }, {
-      onSuccess: () => {
-        form.reset();
-        onCancel?.();
-      },
-    }
+      { json: { ...values, workspaceId } },
+      {
+        onSuccess: () => {
+          form.reset();
+          onCancel?.();
+        },
+      }
     );
   };
 
@@ -235,7 +235,7 @@ export const CreateTaskForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Epic
+                      Epic <span className="text-red-500">*</span>
                     </FormLabel>
                     <Select
                       defaultValue={field.value}
@@ -244,14 +244,22 @@ export const CreateTaskForm = ({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select epic (optional)" />
+                          <SelectValue
+                            placeholder={
+                              !spaceId
+                                ? "Select a space first"
+                                : isLoadingEpics
+                                ? "Loading epics…"
+                                : "Select epic"
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <FormMessage />
                       <SelectContent>
                         {epics && epics.map((epic: any) => (
                           <SelectItem key={epic.id} value={epic.id}>
-                            {epic.name}
+                            {epic.title ?? epic.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -12,19 +12,27 @@ import {
   ChevronDown,
   ListTree,
 } from "lucide-react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
-import { Spaces } from "@/components/spaces";
-import Image from "next/image";
+import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
+import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
+import { routes } from "@/lib/routes";
+import { SpacesSwitcher } from "./SpacesSwitcher";
+import { EpicsSidebar } from "./EpicsSidebar";
 
 export const Sidebar = () => {
   const { data: user } = useCurrent();
   const workspaceId = useWorkspaceId();
+  const spaceId = useSpaceId();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: workspacesData } = useGetWorkspaces();
+  const currentWorkspace = workspacesData?.documents?.find(
+    (w: any) => w.$id === workspaceId
+  );
 
   const userId = user?.id;
   const displayName =
@@ -35,65 +43,80 @@ export const Sidebar = () => {
   const avatarInitial = displayName.charAt(0).toUpperCase();
   const userEmail = user?.email || "";
 
-  const navItems = [
-    { label: "Dashboard", href: `/workspaces/${workspaceId}`, icon: LayoutDashboard, exact: true },
-    { label: "Tasks for you", href: `/workspaces/${workspaceId}/tasks?assigneeId=${userId}`, icon: CheckSquare, base: `/workspaces/${workspaceId}/tasks` },
-    { label: "Created by you", href: `/workspaces/${workspaceId}/tasks?creatorId=${userId}`, icon: FilePen, base: `/workspaces/${workspaceId}/tasks` },
-    { label: "Notes", href: `/workspaces/${workspaceId}/notes`, icon: FileText },
-    { label: "Teams", href: `/workspaces/${workspaceId}/members`, icon: Users },
-    { label: "All tasks", href: `/workspaces/${workspaceId}/tasks`, icon: ListTree , base: `/workspaces/${workspaceId}/tasks` },
-  ];
+  const getNavItems = () => {
+    if (!spaceId) return [];
+    return [
+      { label: "Tasks for you",  href: `${routes.spaceTasks(workspaceId, spaceId)}?assigneeId=${userId}`, icon: CheckSquare, base: routes.spaceTasks(workspaceId, spaceId) },
+      { label: "Created by you", href: `${routes.spaceTasks(workspaceId, spaceId)}?creatorId=${userId}`,  icon: FilePen,     base: routes.spaceTasks(workspaceId, spaceId) },
+      { label: "Notes",          href: routes.spaceNotes(workspaceId, spaceId),                           icon: FileText },
+      { label: "Teams",          href: routes.spaceTeams(workspaceId, spaceId),                           icon: Users },
+      { label: "All tasks",      href: routes.spaceTasks(workspaceId, spaceId),                           icon: ListTree,    base: routes.spaceTasks(workspaceId, spaceId) },
+    ];
+  };
+
+  const navItems = getNavItems();
 
   const isActiveRoute = (item: { href: string; exact?: boolean; base?: string }) => {
-    // Exact match for dashboard to prevent it being always active
     if (item.exact) return pathname === item.href;
-    
-    // Use base path (without query params) for sub-routes
+
     const base = item.base || item.href.split("?")[0];
-    
-    // Check if item has query params
     const itemHasQueryParams = item.href.includes("?");
     const urlHasQueryParams = searchParams.toString().length > 0;
-    
-    // If item has query params but URL doesn't have any, don't match
-    // This prevents items like ?assigneeId=... from highlighting on plain /tasks URL
+
     if (itemHasQueryParams && !urlHasQueryParams) return false;
-    
-    // If URL has query params but item doesn't have any, don't match
-    // This prevents "All tasks" from highlighting when URL has ?assigneeId=...
     if (!itemHasQueryParams && urlHasQueryParams) return false;
-    
-    // If both have query params, extract and compare them
+
     if (itemHasQueryParams && urlHasQueryParams) {
       const itemParams = new URLSearchParams(item.href.split("?")[1]);
       const urlParamKeys = Array.from(searchParams.keys());
-      
-      // Check if all params in item.href exist in URL
-      const hasMatchingParams = Array.from(itemParams.keys()).every(key => 
+      const hasMatchingParams = Array.from(itemParams.keys()).every((key) =>
         urlParamKeys.includes(key)
       );
-      
       if (!hasMatchingParams) return false;
     }
-    
+
     return pathname === base || pathname?.startsWith(base + "/");
   };
+
+  const settingsHref = spaceId ? routes.spaceSettings(workspaceId, spaceId) : "";
+  const isSettingsActive = settingsHref && pathname?.startsWith(settingsHref);
 
   return (
     <aside className="h-full bg-white border-r border-gray-100 flex flex-col w-full">
       {/* Logo */}
       <div className="px-4 flex items-center gap-2 h-14 border-b border-gray-100 shrink-0">
-        <Link href={`/workspaces/${workspaceId}`} className="flex items-center gap-2">
+        <Link href={spaceId ? routes.space(workspaceId, spaceId) : routes.workspace(workspaceId)} className="flex items-center gap-2">
           <div className="w-7 h-7 rounded overflow-hidden shrink-0">
-            <Image src="/images/finepro-lglogo.jpg" alt="FinePro Logo" width={28} height={28} className="object-cover" />
+            <Image
+              src="/images/finepro-lglogo.jpg"
+              alt="FinePro Logo"
+              width={28}
+              height={28}
+              className="object-cover"
+            />
           </div>
           <span className="font-bold text-gray-900 text-base tracking-tight">FinePro</span>
         </Link>
       </div>
 
-      {/* Workspace Switcher */}
+      {/* Workspace label */}
+      {currentWorkspace && (
+        <div className="px-4 py-2 border-b border-gray-100 shrink-0">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">
+            Workspace
+          </p>
+          <p className="text-sm font-semibold text-gray-700 truncate">
+            {currentWorkspace.name}
+          </p>
+        </div>
+      )}
+
+      {/* Spaces Switcher */}
       <div className="px-3 py-2.5 border-b border-gray-100 shrink-0">
-        <WorkspaceSwitcher />
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+          Current Space
+        </p>
+        <SpacesSwitcher />
       </div>
 
       {/* Navigation */}
@@ -127,30 +150,37 @@ export const Sidebar = () => {
           })}
         </nav>
 
-        {/* Spaces Section */}
+        {/* Epics for selected space */}
         <div className="px-2 mt-1">
-          <Spaces />
+          <EpicsSidebar />
         </div>
       </div>
 
       {/* Bottom: Settings + User */}
       <div className="shrink-0 border-t border-gray-100">
-        <div className="p-2">
-          <Link href={`/workspaces/${workspaceId}/settings`}>
-            <div className={cn(
-              "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
-              pathname?.startsWith(`/workspaces/${workspaceId}/settings`)
-                ? "bg-blue-50 text-blue-700 font-medium"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            )}>
-              <Settings size={15} className={cn(
-                "shrink-0",
-                pathname?.startsWith(`/workspaces/${workspaceId}/settings`) ? "text-blue-600" : "text-gray-400"
-              )} />
-              <span>Settings</span>
-            </div>
-          </Link>
-        </div>
+        {settingsHref && (
+          <div className="p-2">
+            <Link href={settingsHref}>
+              <div
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
+                  isSettingsActive
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <Settings
+                  size={15}
+                  className={cn(
+                    "shrink-0",
+                    isSettingsActive ? "text-blue-600" : "text-gray-400"
+                  )}
+                />
+                <span>Settings</span>
+              </div>
+            </Link>
+          </div>
+        )}
         {/* User profile */}
         <div className="px-3 pb-3">
           <div className="flex items-center gap-2 px-2 py-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">

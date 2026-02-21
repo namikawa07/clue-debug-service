@@ -48,23 +48,39 @@ class WorkspaceService:
         )
         return list(result.scalars().all())
     
+    async def get_by_owner(self, owner_id: str) -> Optional[Workspace]:
+        """Get workspace owned by a specific user (one per user)."""
+        result = await self.db.execute(
+            select(Workspace).where(Workspace.owner_id == str(owner_id))
+        )
+        return result.scalar_one_or_none()
+
     async def create(
         self,
         data: WorkspaceCreate,
         owner_id: str
     ) -> Workspace:
-        """Create a new workspace and add owner as admin"""
+        """Create a new workspace (one per user). Auto-creates a Common Space and General epic."""
+        from sqlalchemy.exc import IntegrityError
+
+        # Enforce one workspace per user
+        existing = await self.get_by_owner(owner_id)
+        if existing:
+            raise ValueError(
+                f"User already owns a workspace: '{existing.name}'. "
+                "Only one workspace is allowed per user."
+            )
+
         invite_code = self._generate_invite_code()
-        
+
         workspace = Workspace(
             name=data.name,
             owner_id=owner_id,
             invite_code=invite_code
         )
-        
         self.db.add(workspace)
-        await self.db.flush()  # To get workspace.id
-        
+        await self.db.flush()  # Populate workspace.id
+
         # Add owner as admin member
         member = Member(
             workspace_id=workspace.id,
@@ -72,7 +88,32 @@ class WorkspaceService:
             role=MemberRole.ADMIN
         )
         self.db.add(member)
-        
+        await self.db.flush()
+
+        # Auto-create default "Common Space" using workspace name
+        from app.models.space import Space
+        from app.utils.id_generator import generate_space_id
+        common_space = Space(
+            id=generate_space_id(),
+            workspace_id=workspace.id,
+            name=f"{data.name} Common Space",
+            description="Default space for your workspace",
+            created_by=owner_id,
+        )
+        self.db.add(common_space)
+        await self.db.flush()  # Populate common_space.id
+
+        # Auto-create default "General" epic inside the Common Space
+        from app.models.epic import Epic
+        from app.utils.id_generator import generate_epic_id
+        general_epic = Epic(
+            id=generate_epic_id(),
+            space_id=common_space.id,
+            title="General",
+            description="Default epic for general tasks",
+        )
+        self.db.add(general_epic)
+
         await self.db.commit()
         await self.db.refresh(workspace)
         return workspace

@@ -74,12 +74,18 @@ async def create_task(
     task_dict = task_data.dict()
     task_dict["created_by"] = str(current_user.id)
     
-    task = await enhanced_service.create_task_with_realtime(
-        task_data=task_dict,
-        space_id=str(space_id),
-        created_by=str(current_user.id),
-        notify_users=True
-    )
+    try:
+        task = await enhanced_service.create_task_with_realtime(
+            task_data=task_dict,
+            space_id=str(space_id),
+            created_by=str(current_user.id),
+            notify_users=True
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc)
+        )
     return task
 
 

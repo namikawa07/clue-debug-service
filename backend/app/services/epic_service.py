@@ -9,7 +9,7 @@ from typing import Optional, List
 
 from app.models.epic import Epic
 from app.models.enums import ActionType, EntityType
-from app.schemas.epic import EpicCreate, EpicUpdate
+from app.schemas.epic import EpicCreate, EpicUpdate, EpicResponse
 from app.services.activity_service import ActivityService
 
 
@@ -37,6 +37,36 @@ class EpicService:
             .order_by(Epic.sequence_order.asc().nullslast(), Epic.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def get_by_space_with_counts(self, space_id: str) -> list[dict]:
+        """Get all epics in a space with aggregated task statistics"""
+        from sqlalchemy import func, case as sql_case
+        from app.models.task import Task
+        from app.models.enums import TaskStatus
+
+        stmt = (
+            select(
+                Epic,
+                func.count(Task.id).label("task_count"),
+                func.sum(sql_case((Task.status == TaskStatus.DONE, 1), else_=0))
+                    .label("completed_task_count"),
+            )
+            .outerjoin(Task, Task.epic_id == Epic.id)
+            .where(Epic.space_id == space_id)
+            .group_by(Epic.id)
+            .order_by(Epic.sequence_order.asc().nullslast(), Epic.created_at.desc())
+        )
+        rows = (await self.db.execute(stmt)).all()
+        out = []
+        for epic, tc, cc in rows:
+            tc, cc = tc or 0, cc or 0
+            out.append({
+                **EpicResponse.model_validate(epic).model_dump(),
+                "task_count": tc,
+                "completed_task_count": cc,
+                "completion_percentage": round(cc / tc * 100, 1) if tc > 0 else 0.0,
+            })
+        return out
     
     async def create(self, data: EpicCreate, user_id: str) -> Epic:
         """Create a new epic"""

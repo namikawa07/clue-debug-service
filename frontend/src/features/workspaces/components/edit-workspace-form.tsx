@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
-import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ interface EditWorkspaceFormProps {
 
 export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => {
   const { mutate: updateWorkspace, isPending } = useUpdateWorkspace();
-  // const { mutate: deleteWorkspace, isPending: isDeletingWorkspace } = useDeleteWorkspace();
+  const { mutate: deleteWorkspace, isPending: isDeletingWorkspace } = useDeleteWorkspace();
   // const { mutate: resetInviteCode, isPending: isResettingInviteCode } = useResetInviteCode();
 
   const [DeleteDialog, confirmDelete] = useConfirm(
@@ -42,10 +41,10 @@ export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => 
     `This will permanently delete "${initialValues.name}" and all associated data. This action cannot be undone.`,
     "destructive"
   );
-  const [ResetDialog, confirmReset] = useConfirm(
-    "Reset Invite Link",
-    "All existing invite links will be invalidated immediately. New members will need the updated link.",
-  );
+  // const [ResetDialog, confirmReset] = useConfirm(
+  //   "Reset Invite Link",
+  //   "All existing invite links will be invalidated immediately. New members will need the updated link.",
+  // );
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -73,22 +72,22 @@ export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => 
     if (file) form.setValue("image", file);
   };
 
-  const fullInviteLink = typeof window !== "undefined"
-    ? `${window.location.origin}/workspaces/${initialValues.$id}/join/${initialValues.inviteCode}`
-    : "";
+  // const fullInviteLink = typeof window !== "undefined"
+  //   ? `${window.location.origin}/workspaces/${initialValues.$id}/join/${initialValues.inviteCode}`
+  //   : "";
 
-  const handleCopyInviteLink = () => {
-    navigator.clipboard
-      .writeText(fullInviteLink)
-      .then(() => toast.success("Invite link copied to clipboard"))
-      .catch(() => toast.error("Failed to copy invite link"));
-  };
+  // const handleCopyInviteLink = () => {
+  //   navigator.clipboard
+  //     .writeText(fullInviteLink)
+  //     .then(() => toast.success("Invite link copied to clipboard"))
+  //     .catch(() => toast.error("Failed to copy invite link"));
+  // };
 
-  const handleResetInviteCode = async () => {
-    const ok = await confirmReset();
-    if (!ok) return;
-    resetInviteCode({ param: { workspaceId: initialValues.$id } });
-  };
+  // const handleResetInviteCode = async () => {
+  //   const ok = await confirmReset();
+  //   if (!ok) return;
+  //   resetInviteCode({ param: { workspaceId: initialValues.$id } });
+  // };
 
   const handleDelete = async () => {
     const ok = await confirmDelete();
@@ -102,7 +101,7 @@ export const EditWorkspaceForm = ({ initialValues }: EditWorkspaceFormProps) => 
   return (
     <div className="flex flex-col gap-5">
       <DeleteDialog />
-      <ResetDialog />
+      {/* <ResetDialog /> */}
 
       {/* ── Workspace details ── */}
       <section className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">

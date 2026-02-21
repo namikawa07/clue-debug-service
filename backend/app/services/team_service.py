@@ -87,7 +87,7 @@ class TeamService:
         team = await self.get_by_id(team_id)
         if not team:
             return False
-        
-        await self.db.delete(team)
+
+        self.db.delete(team)
         await self.db.commit()
         return True
