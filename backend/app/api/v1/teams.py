@@ -49,16 +49,26 @@ async def get_team(
     current_user: User = Depends(get_current_user)
 ):
     """Get team details and members"""
-    service = TeamService(db)
-    team = await service.get_by_id(team_id)
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
+    try:
+        service = TeamService(db)
+        team = await service.get_by_id(team_id)
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
 
-    member_service = MemberService(db)
-    if not await member_service.get_membership(current_user.id, team.workspace_id):
-        raise HTTPException(status_code=403, detail="Not a member of this workspace")
+        # Check permission
+        member_service = MemberService(db)
+        membership = await member_service.get_membership(current_user.id, team.workspace_id)
+        if not membership:
+            raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
-    return team
+        return team
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting team {team_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/teams/{team_id}", response_model=TeamResponse)
 async def update_team(

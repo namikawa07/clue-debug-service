@@ -13,9 +13,13 @@ class TeamService:
 
     async def get_by_id(self, team_id: str) -> Optional[Team]:
         result = await self.db.execute(
-            select(Team).options(selectinload(Team.members)).where(Team.id == team_id)
+            select(Team).where(Team.id == team_id)
         )
-        return result.scalar_one_or_none()
+        team = result.scalar_one_or_none()
+        if team:
+            # Eagerly load members
+            await self.db.refresh(team, ["members"])
+        return team
 
     async def list_workspace_teams(self, workspace_id: str) -> List[Team]:
         result = await self.db.execute(
