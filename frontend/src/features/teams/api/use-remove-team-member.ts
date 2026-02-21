@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 interface RemoveTeamMemberRequest {
   param: {
     teamId: string;
-    userId: string;
+    memberId: string;
   };
 }
 
@@ -14,7 +14,7 @@ export const useRemoveTeamMember = () => {
 
   const mutation = useMutation<any, Error, RemoveTeamMemberRequest>({
     mutationFn: async ({ param }) => {
-      await api.delete(`/teams/${param.teamId}/members/${param.userId}`);
+      await api.delete(`/teams/${param.teamId}/members/${param.memberId}`);
       return { success: true };
     },
     onSuccess: (_, variables) => {

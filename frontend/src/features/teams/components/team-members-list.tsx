@@ -21,10 +21,10 @@ export const TeamMembersList = ({ teamId }: TeamMembersListProps) => {
         "destructive"
     );
 
-    const handleRemove = async (userId: string) => {
+    const handleRemove = async (memberId: string) => {
         const ok = await confirmRemove();
         if (!ok) return;
-        removeMember({ param: { teamId, userId } });
+        removeMember({ param: { teamId, memberId } });
     };
 
     const members = team?.members || [];

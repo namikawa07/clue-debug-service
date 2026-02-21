@@ -1,15 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.schemas.team import TeamCreate, TeamUpdate, TeamResponse, TeamWithMembers
+from app.schemas.team import (
+    TeamCreate, TeamUpdate, TeamResponse,
+    TeamWithMembers, TeamMemberResponse,
+)
 from app.services.team_service import TeamService
 from app.services.member_service import MemberService
 
 router = APIRouter()
+
+
+def _team_with_members(team) -> dict:
+    """Convert a Team ORM object (with eagerly loaded team_memberships->user)
+    into the dict shape expected by TeamWithMembers."""
+    members = []
+    for membership in team.team_memberships:
+        user = membership.user
+        if user:
+            members.append(TeamMemberResponse(
+                id=membership.id,       # member id (for add/remove operations)
+                name=user.name,
+                email=user.email,
+                avatar_url=user.avatar_url,
+            ))
+    return {
+        "id": team.id,
+        "workspace_id": team.workspace_id,
+        "name": team.name,
+        "description": team.description,
+        "created_at": team.created_at,
+        "updated_at": team.updated_at,
+        "members": members,
+    }
+
 
 @router.get("/workspaces/{workspace_id}/teams", response_model=List[TeamResponse])
 async def list_teams(
@@ -21,9 +49,10 @@ async def list_teams(
     member_service = MemberService(db)
     if not await member_service.get_membership(current_user.id, workspace_id):
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
-    
+
     service = TeamService(db)
     return await service.list_workspace_teams(workspace_id)
+
 
 @router.post("/workspaces/{workspace_id}/teams", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 async def create_team(
@@ -36,11 +65,11 @@ async def create_team(
     member_service = MemberService(db)
     if not await member_service.is_admin(current_user.id, workspace_id):
         raise HTTPException(status_code=403, detail="Admin permissions required")
-    
+
     service = TeamService(db)
-    # Ensure workspace_id matches
     team_data.workspace_id = workspace_id
     return await service.create(team_data)
+
 
 @router.get("/teams/{team_id}", response_model=TeamWithMembers)
 async def get_team(
@@ -49,26 +78,17 @@ async def get_team(
     current_user: User = Depends(get_current_user)
 ):
     """Get team details and members"""
-    try:
-        service = TeamService(db)
-        team = await service.get_by_id(team_id)
-        if not team:
-            raise HTTPException(status_code=404, detail="Team not found")
+    service = TeamService(db)
+    team = await service.get_by_id(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
 
-        # Check permission
-        member_service = MemberService(db)
-        membership = await member_service.get_membership(current_user.id, team.workspace_id)
-        if not membership:
-            raise HTTPException(status_code=403, detail="Not a member of this workspace")
+    member_service = MemberService(db)
+    if not await member_service.get_membership(current_user.id, team.workspace_id):
+        raise HTTPException(status_code=403, detail="Not a member of this workspace")
 
-        return team
-    except HTTPException:
-        raise
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error getting team {team_id}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+    return _team_with_members(team)
+
 
 @router.patch("/teams/{team_id}", response_model=TeamResponse)
 async def update_team(
@@ -82,52 +102,58 @@ async def update_team(
     team = await service.get_by_id(team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-        
+
     member_service = MemberService(db)
     if not await member_service.is_admin(current_user.id, team.workspace_id):
         raise HTTPException(status_code=403, detail="Admin permissions required")
-        
+
     return await service.update(team_id, team_data)
 
-@router.post("/teams/{team_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post("/teams/{team_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def add_team_member(
     team_id: str,
-    user_id: str,
+    member_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Add a member to a team (Admin only)"""
+    """Add a workspace member to a team (Admin only).
+    member_id is the workspace membership record ID."""
     service = TeamService(db)
     team = await service.get_by_id(team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-        
+
     member_service = MemberService(db)
     if not await member_service.is_admin(current_user.id, team.workspace_id):
         raise HTTPException(status_code=403, detail="Admin permissions required")
-        
-    await service.add_member(team_id, user_id)
+
+    success = await service.add_member(team_id, member_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Member not found")
     return None
 
-@router.delete("/teams/{team_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+
+@router.delete("/teams/{team_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_team_member(
     team_id: str,
-    user_id: str,
+    member_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Remove a member from a team (Admin only)"""
+    """Remove a member from a team (Admin only)."""
     service = TeamService(db)
     team = await service.get_by_id(team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-        
+
     member_service = MemberService(db)
     if not await member_service.is_admin(current_user.id, team.workspace_id):
         raise HTTPException(status_code=403, detail="Admin permissions required")
-        
-    await service.remove_member(team_id, user_id)
+
+    await service.remove_member(team_id, member_id)
     return None
+
 
 @router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_team(
@@ -140,10 +166,10 @@ async def delete_team(
     team = await service.get_by_id(team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-        
+
     member_service = MemberService(db)
     if not await member_service.is_admin(current_user.id, team.workspace_id):
         raise HTTPException(status_code=403, detail="Admin permissions required")
-        
+
     await service.delete_team(team_id)
     return None

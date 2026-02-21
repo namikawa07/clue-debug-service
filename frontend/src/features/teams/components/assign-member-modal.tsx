@@ -41,13 +41,10 @@ export const AssignMemberModal = ({
         m.email?.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleAdd = (userId: string) => {
-        addMember({ param: { teamId, userId } }, {
+    const handleAdd = (memberId: string) => {
+        addMember({ param: { teamId, memberId } }, {
             onSuccess: () => {
-                // Keep modal open for more? Or close?
-                // User said "Assign members to Teams" - singular/plural loop.
-                // For now, I'll close it to show success.
-                // Actually, staying open allows adding multiple.
+                // Stay open to allow adding multiple members
             }
         });
     };
@@ -86,7 +83,7 @@ export const AssignMemberModal = ({
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleAdd(member.userId || member.id)}
+                                    onClick={() => handleAdd(member.id)}
                                     disabled={isPending}
                                 >
                                     Add

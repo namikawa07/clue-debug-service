@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 interface AddTeamMemberRequest {
     param: {
         teamId: string;
-        userId: string;
+        memberId: string;
     };
 }
 
@@ -14,7 +14,7 @@ export const useAddTeamMember = () => {
 
     const mutation = useMutation<any, Error, AddTeamMemberRequest>({
         mutationFn: async ({ param }) => {
-            await api.post(`/teams/${param.teamId}/members/${param.userId}`);
+            await api.post(`/teams/${param.teamId}/members/${param.memberId}`);
             return { success: true };
         },
         onSuccess: (_, variables) => {
