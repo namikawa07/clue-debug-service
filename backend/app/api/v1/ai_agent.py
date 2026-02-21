@@ -64,11 +64,19 @@ class ChatHistoryItem(BaseModel):
     content: str
 
 
+class PageContextItem(BaseModel):
+    pageName: Optional[str] = None
+    spaceId: Optional[str] = None
+    epicId: Optional[str] = None
+    taskId: Optional[str] = None
+
+
 class AiAgentRequest(BaseModel):
     message: str
     workspaceId: str
     model: Literal["kimi", "qwen"] = "qwen"
     chatHistory: Optional[List[ChatHistoryItem]] = None
+    pageContext: Optional[PageContextItem] = None
 
 
 class AiAgentResponse(BaseModel):
@@ -96,12 +104,26 @@ async def ai_agent_chat(
 
     # Build conversation messages
     user_context = f"Current User: {current_user.name} (ID: {str(current_user.id)})"
-    
+
     refined_prompt = SYSTEM_PROMPT + f"\n\nContext:\n{user_context}\n"
     refined_prompt += "If the user says 'me' or 'assign to myself', use the Current User ID.\n"
     refined_prompt += "If the user specifies a name or role (e.g. 'developer'), call get_members to find the ID. Do NOT guess.\n"
     refined_prompt += "Spaces (e.g. 'jjkjdsfd') are just containers. They do NOT restrict which members can be assigned. You can assign ANY workspace member to ANY space.\n"
-    refined_prompt += "If no space is specified, the system will pick the default. You don't need to ask."
+    refined_prompt += "If no space is specified, the system will pick the default. You don't need to ask.\n"
+
+    # ── Page context — tells the AI where the user currently is ───
+    page_context = body.pageContext
+    if page_context:
+        refined_prompt += f"\nCurrent page context:\n"
+        refined_prompt += f"- Page: {page_context.pageName or 'unknown'}\n"
+        if page_context.spaceId:
+            refined_prompt += f"- Current space_id: {page_context.spaceId}\n"
+        if page_context.epicId:
+            refined_prompt += f"- Current epic_id: {page_context.epicId}\n"
+        if page_context.taskId:
+            refined_prompt += f"- Current task_id: {page_context.taskId}\n"
+        refined_prompt += "When the user says 'here', 'this space', 'this epic', or similar, use the IDs from the page context above.\n"
+        refined_prompt += "When creating tasks and the user doesn't specify a space, use the current space_id from page context if available.\n"
 
     messages = [{"role": "system", "content": refined_prompt}]
 
@@ -182,6 +204,11 @@ async def ai_agent_chat(
                     db=db,
                     workspace_id=workspace_id,
                     user_id=user_id,
+                    page_context={
+                        "space_id": page_context.spaceId if page_context else None,
+                        "epic_id": page_context.epicId if page_context else None,
+                        "task_id": page_context.taskId if page_context else None,
+                    },
                 )
 
                 # Append tool result as a message

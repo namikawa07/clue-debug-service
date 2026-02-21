@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
+import { usePageContext } from "../hooks/use-page-context";
 import Image from "next/image";
 
 
@@ -90,6 +91,7 @@ const RichMessage = ({ content, workspaceId }: { content: string; workspaceId: s
 export const AIChat = () => {
     const workspaceId = useWorkspaceId();
     const queryClient = useQueryClient();
+    const pageContext = usePageContext();
     const { data: members } = useGetMembers({ workspaceId });
 
     const [isOpen, setIsOpen] = useState(false);
@@ -126,16 +128,23 @@ export const AIChat = () => {
                 workspaceId: workspaceId,
                 model: selectedModel,
                 chatHistory: chatHistory,
+                pageContext: {
+                    pageName: pageContext.pageName,
+                    spaceId: pageContext.spaceId,
+                    epicId: pageContext.epicId,
+                    taskId: pageContext.taskId,
+                },
             });
 
 
             setChatHistory((prev) => [...prev, { role: "ai", content: data.content }]);
 
             // ── Auto-refresh logic ──────────────────────────────────────
-            // If AI made changes to tasks, invalidate the tasks query key
             if (data.tool_calls_made?.some(tc => tc === "create_task" || tc === "update_task")) {
-                console.log("AI modified tasks. Invalidating 'tasks' query...");
                 queryClient.invalidateQueries({ queryKey: ["tasks"] });
+            }
+            if (data.tool_calls_made?.some(tc => tc === "create_epic" || tc === "update_epic")) {
+                queryClient.invalidateQueries({ queryKey: ["epics"] });
             }
         } catch (error: any) {
             console.error("AI Chat Error:", error);

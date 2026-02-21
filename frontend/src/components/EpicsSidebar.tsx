@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useGetEpics } from "@/features/epics/api/use-get-epics";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
-import { useCreateEpic } from "@/features/epics/api/use-create-epic";
+import { useCreateEpicModal } from "@/features/epics/hooks/use-create-epic-modal";
 import { routes } from "@/lib/routes";
 
 export const EpicsSidebar = () => {
@@ -19,7 +19,7 @@ export const EpicsSidebar = () => {
   const [search, setSearch] = useState("");
 
   const { data: epics, isLoading } = useGetEpics({ spaceId });
-  const { mutate: createEpic, isPending } = useCreateEpic();
+  const { open: openCreateEpic } = useCreateEpicModal();
 
   const filtered = search
     ? epics?.filter((e: any) =>
@@ -27,21 +27,14 @@ export const EpicsSidebar = () => {
       )
     : epics;
 
-  const handleNewEpic = () => {
-    if (!spaceId || isPending) return;
-    const title = prompt("Epic title:");
-    if (!title?.trim()) return;
-    createEpic({ title: title.trim(), spaceId, status: "todo", priority: "medium" });
-  };
-
   return (
     <div className="mt-2">
       {/* Section header */}
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-sm font-semibold text-gray-600 select-none">Epics</span>
         <button
-          onClick={handleNewEpic}
-          disabled={!spaceId || isPending}
+          onClick={openCreateEpic}
+          disabled={!spaceId}
           className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
           aria-label="New epic"
         >

@@ -18,6 +18,8 @@ desktop.ini
 .svn/
 *.sublime-project
 *.sublime-workspace
+*/__tests__/*
+/frontend/src/__tests__/*
 
 ########################
 # Python artifacts

@@ -6,7 +6,7 @@ import { Layers, Plus, CheckCircle2 } from "lucide-react";
 import { useGetEpics } from "@/features/epics/api/use-get-epics";
 import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { useCreateEpic } from "@/features/epics/api/use-create-epic";
+import { useCreateEpicModal } from "@/features/epics/hooks/use-create-epic-modal";
 import { routes } from "@/lib/routes";
 import { PageLoader } from "@/components/page-loader";
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,7 @@ export const SpaceEpicsClient = () => {
   const workspaceId = useWorkspaceId();
   const spaceId = useSpaceId();
   const { data: epics, isLoading } = useGetEpics({ spaceId });
-  const { mutate: createEpic, isPending } = useCreateEpic();
-
-  const handleNewEpic = () => {
-    if (!spaceId || isPending) return;
-    const title = prompt("Epic title:");
-    if (!title?.trim()) return;
-    createEpic({ title: title.trim(), spaceId, status: "todo", priority: "medium" });
-  };
+  const { open: openCreateEpic } = useCreateEpicModal();
 
   if (isLoading) return <PageLoader />;
 
@@ -55,7 +48,7 @@ export const SpaceEpicsClient = () => {
             </p>
           </div>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={handleNewEpic} disabled={isPending}>
+        <Button size="sm" className="gap-1.5" onClick={openCreateEpic}>
           <Plus size={14} />
           New Epic
         </Button>

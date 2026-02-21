@@ -1,5 +1,6 @@
 import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
 import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
+import { CreateEpicModal } from "@/features/epics/components/create-epic-modal";
 import { CreateSpaceModal } from "@/features/spaces/components/create-space-modal";
 import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
 import { OnboardingGuard } from "@/features/auth/components/OnboardingGuard";
@@ -20,6 +21,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <CreateWorkspaceModal />
       <CreateSpaceModal />
       <CreateTaskModal />
+      <CreateEpicModal />
       <EditTaskModal />
       <RealtimeWrapper>
         <div className="flex w-full h-screen">

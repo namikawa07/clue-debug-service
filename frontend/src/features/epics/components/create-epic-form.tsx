@@ -7,6 +7,7 @@ import { Loader } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -43,6 +44,7 @@ export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
         resolver: zodResolver(createEpicSchema),
         defaultValues: {
             title: "",
+            description: "",
             status: "todo",
             priority: "medium",
             spaceId: spaceId,
@@ -53,7 +55,7 @@ export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
         mutate({ ...values, spaceId }, {
             onSuccess: () => {
                 form.reset();
-                // onCancel?.(); // Keep open to create multiple? Or close? User choice. Let's keep open for now or reset.
+                onCancel?.();
             }
         });
     };
@@ -80,6 +82,20 @@ export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
                                         <FormLabel>Epic Title</FormLabel>
                                         <FormControl>
                                             <Input {...field} placeholder="Enter epic title" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Description</FormLabel>
+                                        <FormControl>
+                                            <Textarea {...field} placeholder="Enter epic description" rows={3} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -141,7 +157,10 @@ export const CreateEpicForm = ({ onCancel }: CreateEpicFormProps) => {
                             </div>
                         </div>
                         <DottedSeparator className="py-7" />
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-between">
+                            <Button type="button" size="lg" variant="secondary" onClick={onCancel} disabled={isPending}>
+                                Cancel
+                            </Button>
                             <Button type="submit" size="lg" disabled={isPending}>
                                 {isPending ? <Loader className="animate-spin size-4 mr-2" /> : null}
                                 Create Epic

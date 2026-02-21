@@ -24,17 +24,20 @@ async def execute_tool(
     db: AsyncSession,
     workspace_id: str,
     user_id: str,
+    page_context: dict | None = None,
 ) -> str:
     """
     Execute a tool by name and return a JSON string result.
     This bridges AI tool calls → existing backend services.
+    page_context carries the user's current URL context (space_id, epic_id, task_id).
     """
+    ctx = page_context or {}
     try:
         if name == "get_tasks":
             return await _get_tasks(arguments, db, workspace_id)
 
         elif name == "create_task":
-            return await _create_task(arguments, db, workspace_id, user_id)
+            return await _create_task(arguments, db, workspace_id, user_id, ctx)
 
         elif name == "update_task":
             return await _update_task(arguments, db, user_id)
@@ -89,13 +92,14 @@ async def _get_tasks(args: dict, db: AsyncSession, workspace_id: str) -> str:
     return json.dumps({"tasks": result, "count": len(result)})
 
 
-async def _create_task(args: dict, db: AsyncSession, workspace_id: str, user_id: str) -> str:
+async def _create_task(args: dict, db: AsyncSession, workspace_id: str, user_id: str, page_context: dict | None = None) -> str:
     service = TaskService(db)
+    ctx = page_context or {}
 
-    space_id = args.get("space_id")
+    space_id = args.get("space_id") or ctx.get("space_id")
     space_service = SpaceService(db)
     workspace_spaces = await space_service.get_by_workspace(workspace_id)
-    
+
     if not workspace_spaces:
         return json.dumps({"error": "No spaces found in workspace. Create a space first."})
 
@@ -105,11 +109,8 @@ async def _create_task(args: dict, db: AsyncSession, workspace_id: str, user_id:
         target_space = next((s for s in workspace_spaces if s.id == space_id), None)
         if not target_space:
              target_space = next((s for s in workspace_spaces if s.name.lower() == space_id.lower()), None)
-    
-    # Default space preference
-    if not target_space:
-        target_space = next((s for s in workspace_spaces if s.id == "2wiv30eii8p6"), None)
 
+    # Fallback to first space in workspace
     if not target_space:
         target_space = workspace_spaces[0]
         logger.info(f"Using default space: {target_space.name} ({target_space.id})")
@@ -121,8 +122,14 @@ async def _create_task(args: dict, db: AsyncSession, workspace_id: str, user_id:
     if assigned_to and assigned_to.lower() == "developer":
         assigned_to = "3es4e2ml781i"  # Mohammed anfas K P
 
-    # Default Epic
-    epic_id = args.get("epic_id") or "hgna1d85xl"
+    # Epic — prefer explicit arg, then page context, then first epic in space
+    epic_id = args.get("epic_id") or ctx.get("epic_id")
+    if not epic_id:
+        from app.services.epic_service import EpicService
+        epic_service = EpicService(db)
+        epics = await epic_service.get_by_space(space_id)
+        if epics:
+            epic_id = epics[0].id
 
     # Parse optional enums
     priority = Priority(args["priority"]) if args.get("priority") else Priority.MEDIUM
