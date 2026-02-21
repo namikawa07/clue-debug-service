@@ -11,16 +11,7 @@ import { ConnectionStatus } from "@/components/presence";
 import { useConnectionStatus } from "@/contexts/realtime-context";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
-
-const routeLabels: Record<string, string> = {
-  tasks:    "Tasks",
-  spaces:   "Spaces",
-  activity: "Inbox",
-  members:  "Members",
-  teams:    "Teams",
-  notes:    "Notes",
-  settings: "Settings",
-};
+import { buildBreadcrumbs } from "./navbar-breadcrumbs";
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -29,28 +20,11 @@ export const Navbar = () => {
   const workspaceId = useWorkspaceId();
   const { data: workspace } = useGetWorkspace({ workspaceId });
 
-  // Build breadcrumb segments from path
-  const parts = pathname.split("/").filter(Boolean);
-  const segments: { label: string; href: string }[] = [];
-
-  if (workspace) {
-    segments.push({
-      label: workspace.name,
-      href: `/workspaces/${workspaceId}`,
-    });
-  }
-
-  // Feature segment (index 2)
-  if (parts.length >= 3) {
-    const feature = parts[2];
-    const label = routeLabels[feature] || (feature.charAt(0).toUpperCase() + feature.slice(1));
-    segments.push({ label, href: `/${parts.slice(0, 3).join("/")}` });
-  }
-
-  // Deep sub-page
-  if (parts.length >= 5 && routeLabels[parts[4]]) {
-    segments.push({ label: routeLabels[parts[4]], href: pathname });
-  }
+  const segments = buildBreadcrumbs(
+    pathname,
+    workspaceId,
+    workspace ? { name: workspace.name } : null
+  );
 
   return (
     <div className="h-14 px-5 flex items-center justify-between bg-white border-b border-gray-100 shrink-0">

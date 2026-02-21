@@ -4,15 +4,13 @@ import { useState } from "react";
 import { useSpaceId } from "@/features/spaces/hooks/use-space-id";
 import { useGetSpace } from "@/features/spaces/api/use-get-space";
 import { EditSpaceForm } from "@/features/spaces/components/edit-space-form";
-import { CreateEpicForm } from "@/features/epics/components/create-epic-form";
 import { PageLoader } from "@/components/page-loader";
 import { PageError } from "@/components/page-error";
 import { cn } from "@/lib/utils";
-import { Settings, BookMarked, ChevronRight } from "lucide-react";
+import { Settings, ChevronRight } from "lucide-react";
 
 const SECTIONS = [
   { id: "general", label: "General",  icon: Settings,    desc: "Space name & icon" },
-  { id: "epics",   label: "Epics",    icon: BookMarked,  desc: "Manage space epics" },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]["id"];
@@ -101,12 +99,6 @@ export const SpaceSettingsClient = () => {
         </div>
 
         {activeSection === "general" && <EditSpaceForm initialValues={space} />}
-        {activeSection === "epics"   && (
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Create Epic</h3>
-            <CreateEpicForm />
-          </div>
-        )}
       </div>
     </div>
   );
