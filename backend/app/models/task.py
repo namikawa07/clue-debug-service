@@ -46,3 +46,24 @@ class Task(Base):
     @property
     def assignee(self):
         return self.assigned_user
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "space_id": self.space_id,
+            "epic_id": self.epic_id,
+            "title": self.title,
+            "description": self.description,
+            "task_type": self.task_type.value if self.task_type else None,
+            "status": self.status.value if self.status else None,
+            "priority": self.priority.value if self.priority else None,
+            "assigned_to": str(self.assigned_to) if self.assigned_to else None,
+            "created_by": str(self.created_by) if self.created_by else None,
+            "estimated_hours": self.estimated_hours,
+            "actual_hours": self.actual_hours,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "position": self.position,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

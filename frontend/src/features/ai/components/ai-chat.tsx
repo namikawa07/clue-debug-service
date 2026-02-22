@@ -140,11 +140,26 @@ export const AIChat = () => {
             setChatHistory((prev) => [...prev, { role: "ai", content: data.content }]);
 
             // ── Auto-refresh logic ──────────────────────────────────────
-            if (data.tool_calls_made?.some(tc => tc === "create_task" || tc === "update_task")) {
-                queryClient.invalidateQueries({ queryKey: ["tasks"] });
-            }
-            if (data.tool_calls_made?.some(tc => tc === "create_epic" || tc === "update_epic")) {
-                queryClient.invalidateQueries({ queryKey: ["epics"] });
+            if (data.tool_calls_made?.length) {
+                const tools = data.tool_calls_made;
+                if (tools.some(tc => ["create_task", "update_task", "delete_task"].includes(tc))) {
+                    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+                }
+                if (tools.some(tc => ["create_epic", "update_epic"].includes(tc))) {
+                    queryClient.invalidateQueries({ queryKey: ["epics"] });
+                }
+                if (tools.some(tc => ["create_space", "update_space", "delete_space"].includes(tc))) {
+                    queryClient.invalidateQueries({ queryKey: ["spaces"] });
+                }
+                if (tools.some(tc => ["get_teams", "create_team", "update_team", "delete_team", "add_team_member", "remove_team_member"].includes(tc))) {
+                    queryClient.invalidateQueries({ queryKey: ["teams"] });
+                }
+                // Plan execution creates many entities at once
+                if (tools.some(tc => tc === "execute_plan")) {
+                    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+                    queryClient.invalidateQueries({ queryKey: ["epics"] });
+                    queryClient.invalidateQueries({ queryKey: ["spaces"] });
+                }
             }
         } catch (error: any) {
             console.error("AI Chat Error:", error);
