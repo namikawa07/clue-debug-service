@@ -24,7 +24,7 @@ class Space(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     tech_stack = Column(JSON, default=dict)  # frontend, backend, database, hosting
-    status = Column(SQLEnum(SpaceStatus), default=SpaceStatus.PLANNING)
+    status = Column(SQLEnum(SpaceStatus, name="projectstatus", create_type=False), default=SpaceStatus.PLANNING)
     ai_generated = Column(Boolean, default=False)
     complexity_score = Column(Float, nullable=True)
     start_date = Column(DateTime(timezone=True), nullable=True)
