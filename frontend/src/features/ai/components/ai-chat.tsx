@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, Fragment } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { usePageContext } from "../hooks/use-page-context";
+import { parseInlineTokens } from "../lib/parse-message";
+import { TaskChip } from "./task-chip";
+import { MemberChip } from "./member-chip";
 import Image from "next/image";
 
 
@@ -21,70 +24,204 @@ interface AiAgentResponse {
     tool_calls_made?: string[] | null;
 }
 
+type MemberEntry = { id: string; name: string; avatarColor?: { bg: string; text: string } };
 
-// ── Rich message renderer ───────────────────────────────────────────────────
-// Parses @[Name](member:id) and #[Title](task:id) patterns into styled elements
-const RichMessage = ({ content, workspaceId }: { content: string; workspaceId: string }) => {
-    const parts = useMemo(() => {
-        const tokens: { type: "text" | "member" | "task"; value: string; id?: string }[] = [];
-        // Match @[Name](member:id) and #[Title](task:id)
-        const regex = /(@\[([^\]]+)\]\(member:([^)]+)\))|(#\[([^\]]+)\]\(task:([^)]+)\))/g;
-        let lastIndex = 0;
-        let match;
+// ── Inline renderer ─────────────────────────────────────────────────────────
+interface InlineContentProps {
+    text: string;
+    workspaceId: string;
+    members: MemberEntry[];
+}
 
-        while ((match = regex.exec(content)) !== null) {
-            // Push preceding text
-            if (match.index > lastIndex) {
-                tokens.push({ type: "text", value: content.slice(lastIndex, match.index) });
-            }
-
-            if (match[1]) {
-                // Member reference
-                tokens.push({ type: "member", value: match[2], id: match[3] });
-            } else if (match[4]) {
-                // Task reference
-                tokens.push({ type: "task", value: match[5], id: match[6] });
-            }
-
-            lastIndex = match.index + match[0].length;
-        }
-
-        // Push trailing text
-        if (lastIndex < content.length) {
-            tokens.push({ type: "text", value: content.slice(lastIndex) });
-        }
-
-        return tokens;
-    }, [content]);
-
+const InlineContent = ({ text, workspaceId, members }: InlineContentProps) => {
+    const tokens = useMemo(() => parseInlineTokens(text), [text]);
     return (
-        <span>
-            {parts.map((part, i) => {
-                if (part.type === "member") {
-                    return (
-                        <span
-                            key={i}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 bg-neutral-200/80 dark:bg-neutral-700/80 text-neutral-700 dark:text-neutral-200 rounded-md text-xs font-medium"
-                        >
-                            @{part.value}
-                        </span>
-                    );
-                }
-                if (part.type === "task") {
-                    return (
-                        <a
-                            key={i}
-                            href={`/workspaces/${workspaceId}/tasks/${part.id}`}
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 bg-blue-100/80 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium hover:underline cursor-pointer"
-                        >
-                            #{part.value}
-                        </a>
-                    );
-                }
-                return <span key={i}>{part.value}</span>;
+        <>
+            {tokens.map((tok, i) => {
+                if (tok.type === "task")
+                    return <TaskChip key={i} taskId={tok.id} title={tok.title} workspaceId={workspaceId} />;
+                if (tok.type === "member")
+                    return <MemberChip key={i} name={tok.name} memberId={tok.id} members={members} />;
+                if (tok.type === "bold")
+                    return <strong key={i} className="font-semibold">{tok.value}</strong>;
+                return <Fragment key={i}>{tok.value}</Fragment>;
             })}
-        </span>
+        </>
     );
+};
+
+// ── Rich block-level message renderer ───────────────────────────────────────
+const RichMessage = ({
+    content,
+    workspaceId,
+    members,
+}: {
+    content: string;
+    workspaceId: string;
+    members: MemberEntry[];
+}) => {
+    const lines = content.split("\n");
+    const result: React.ReactNode[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        const line = lines[i];
+
+        // ── Skip blank lines ──
+        if (line.trim() === "") {
+            i++;
+            continue;
+        }
+
+        // ── Heading 1 ──
+        if (line.match(/^# /)) {
+            result.push(
+                <p key={`h1-${i}`} className="text-[14px] font-bold text-neutral-900 dark:text-neutral-100 mt-1 mb-0.5">
+                    <InlineContent text={line.replace(/^# /, "")} workspaceId={workspaceId} members={members} />
+                </p>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Heading 2 ──
+        if (line.match(/^## /)) {
+            result.push(
+                <p key={`h2-${i}`} className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-200 mt-1 mb-0.5">
+                    <InlineContent text={line.replace(/^## /, "")} workspaceId={workspaceId} members={members} />
+                </p>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Heading 3 ──
+        if (line.match(/^### /)) {
+            result.push(
+                <p key={`h3-${i}`} className="text-[12px] font-semibold text-neutral-700 dark:text-neutral-300 mt-0.5">
+                    <InlineContent text={line.replace(/^### /, "")} workspaceId={workspaceId} members={members} />
+                </p>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Horizontal rule ──
+        if (line.match(/^[-*]{3,}$/)) {
+            result.push(<hr key={`hr-${i}`} className="border-neutral-200 dark:border-neutral-700 my-1" />);
+            i++;
+            continue;
+        }
+
+        // ── Table row ──
+        if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+            const cells = line
+                .trim()
+                .slice(1, -1)
+                .split("|")
+                .map(c => c.trim());
+
+            // Detect separator row (e.g. |---|---|)
+            const isSeparator = cells.every(c => /^[-:]+$/.test(c));
+            if (isSeparator) {
+                i++;
+                continue;
+            }
+
+            const isHeader =
+                i + 1 < lines.length &&
+                lines[i + 1].trim().startsWith("|") &&
+                lines[i + 1]
+                    .trim()
+                    .slice(1, -1)
+                    .split("|")
+                    .every(c => /^[-:]+$/.test(c.trim()));
+
+            result.push(
+                <div
+                    key={`tr-${i}`}
+                    className={cn(
+                        "grid text-[12px] py-1 px-1 rounded gap-2",
+                        isHeader
+                            ? "font-semibold text-neutral-600 dark:text-neutral-400 border-b border-neutral-200 dark:border-neutral-700"
+                            : "text-neutral-800 dark:text-neutral-200 even:bg-neutral-50 dark:even:bg-neutral-800/30"
+                    )}
+                    style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
+                >
+                    {cells.map((cell, ci) => (
+                        <span key={ci} className="truncate">
+                            <InlineContent text={cell} workspaceId={workspaceId} members={members} />
+                        </span>
+                    ))}
+                </div>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Unordered list item ──
+        if (line.match(/^\s*[-*•]\s/)) {
+            const text = line.replace(/^\s*[-*•]\s+/, "");
+            result.push(
+                <div key={`ul-${i}`} className="flex items-start gap-2 ml-1">
+                    <span className="text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5 text-[11px]">•</span>
+                    <span className="text-[13px] leading-relaxed">
+                        <InlineContent text={text} workspaceId={workspaceId} members={members} />
+                    </span>
+                </div>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Ordered list item (1. 2. etc.) ──
+        if (line.match(/^\s*\d+\.\s/)) {
+            const num = line.match(/^\s*(\d+)\./)?.[1];
+            const text = line.replace(/^\s*\d+\.\s+/, "");
+            result.push(
+                <div key={`ol-${i}`} className="flex items-start gap-2 ml-1">
+                    <span className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5 min-w-[14px]">
+                        {num}.
+                    </span>
+                    <span className="text-[13px] leading-relaxed">
+                        <InlineContent text={text} workspaceId={workspaceId} members={members} />
+                    </span>
+                </div>
+            );
+            i++;
+            continue;
+        }
+
+        // ── Code block (``` ... ```) ──
+        if (line.trim().startsWith("```")) {
+            const codeLines: string[] = [];
+            i++;
+            while (i < lines.length && !lines[i].trim().startsWith("```")) {
+                codeLines.push(lines[i]);
+                i++;
+            }
+            result.push(
+                <pre
+                    key={`code-${i}`}
+                    className="text-[11px] bg-neutral-900 dark:bg-neutral-950 text-neutral-100 rounded-md p-2 my-1 overflow-x-auto font-mono"
+                >
+                    {codeLines.join("\n")}
+                </pre>
+            );
+            i++; // skip closing ```
+            continue;
+        }
+
+        // ── Plain paragraph ──
+        result.push(
+            <p key={`p-${i}`} className="text-[13px] leading-relaxed">
+                <InlineContent text={line} workspaceId={workspaceId} members={members} />
+            </p>
+        );
+        i++;
+    }
+
+    return <div className="space-y-1">{result}</div>;
 };
 
 
@@ -215,6 +352,8 @@ export const AIChat = () => {
         m.email.toLowerCase().includes(mentionQuery.toLowerCase())
     ).slice(0, 5) || [];
 
+    const membersList: MemberEntry[] = members?.documents ?? [];
+
     return (
         <div className="fixed inset-x-0 bottom-6 pointer-events-none z-50 flex justify-center">
             <div className="pointer-events-auto flex flex-col items-center">
@@ -266,7 +405,11 @@ export const AIChat = () => {
                                     )}
                                 >
                                     {msg.role === "ai" ? (
-                                        <RichMessage content={msg.content} workspaceId={workspaceId} />
+                                        <RichMessage
+                                            content={msg.content}
+                                            workspaceId={workspaceId}
+                                            members={membersList}
+                                        />
                                     ) : (
                                         msg.content
                                     )}
