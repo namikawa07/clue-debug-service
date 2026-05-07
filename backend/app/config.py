@@ -25,6 +25,7 @@ class Settings:
     
     # Debug settings
     DEBUG: bool = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
+    PORT: int = int(os.getenv("PORT", "32018"))
     
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "")
     

@@ -215,8 +215,8 @@ export function RealtimeProvider({ children, workspaceId }: RealtimeProviderProp
                 return;
             }
 
-            const fullWsUrl = `${WS_URL}/connect/${access_token}`;
-            console.log("[Realtime] Connecting to WebSocket:", fullWsUrl.replace(access_token, "REDACTED"));
+            const fullWsUrl = `${WS_URL}/connect`;
+            console.log("[Realtime] Connecting to WebSocket:", fullWsUrl);
             const ws = new WebSocket(fullWsUrl);
 
             ws.onopen = () => {
@@ -227,6 +227,7 @@ export function RealtimeProvider({ children, workspaceId }: RealtimeProviderProp
 
                 // Initialize with workspace
                 ws.send(JSON.stringify({
+                    access_token,
                     workspace_id: workspaceId,
                     user_info: {},
                 }));

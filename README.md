@@ -387,7 +387,7 @@ FinePro provides comprehensive real-time capabilities:
 ### WebSocket Endpoints
 
 ```
-ws://localhost:8000/ws/connect/{token}
+ws://localhost:32018/ws/connect/{token}
 ```
 
 ### Realtime Services
@@ -413,16 +413,12 @@ git clone https://github.com/your-repo/finepro.git
 cd finepro
 
 # 2. Start Supabase locally
-cd backend/supabase
 supabase start
 
 # 3. Set up backend
-cd ../..
 cd backend
-cp .env.example .env
-# Edit .env with your configuration
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 127.0.0.1 --port 32018
 
 # 4. Set up frontend
 cd ../frontend
@@ -470,8 +466,8 @@ finepro/
 
 FastAPI provides auto-generated API documentation:
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:32018/docs
+- ReDoc: http://localhost:32018/redoc
 
 ---
 

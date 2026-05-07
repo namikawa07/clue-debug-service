@@ -35,7 +35,7 @@ Phase 1 backend implementation for FinePro AI - AI-powered project management pl
 ## Setup Instructions
 
 ### 1. Prerequisites
-- Python 3.8+
+- Python 3.10+
 - PostgreSQL 12+
 - Node.js (for frontend)
 
@@ -60,22 +60,22 @@ Create a `.env` file from `.env.example`:
 
 ```bash
 # Supabase Configuration
-# Supabase CLI Configuration
-SUPABASE_ACCESS_TOKEN=your_supabase_access_token
-SUPABASE_PROJECT_REF=your_project_ref
-# Supabase API keys/secrets (used by CLI and backend if needed)
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_URL=http://127.0.0.1:32120
+SUPABASE_SERVICE_ROLE_KEY=<local secret key from supabase status -o env>
+SUPABASE_ANON_KEY=<local publishable key from supabase status -o env>
+SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
+SUPABASE_ISSUER=supabase-demo
 
 # PostgreSQL Database
-DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/finepro
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:32121/postgres
 
 # FastAPI JWT Configuration
 SECRET_KEY=your-super-secret-key-change-in-production
 
 # Server Configuration
 DEBUG=true
-ALLOWED_ORIGINS=http://localhost:3000
+PORT=32018
+ALLOWED_ORIGINS=http://localhost:32017
 ```
 
 ### 4. Database Setup
@@ -100,7 +100,7 @@ docker run --name finepro-postgres \
   -e POSTGRES_PASSWORD=password \
   -e POSTGRES_DB=finepro \
   -e POSTGRES_USER=postgres \
-  -p 5432:5432 \
+  -p 32019:5432 \
   -d postgres:15
 ```
 
@@ -119,11 +119,11 @@ alembic upgrade head
 ### 6. Run Development Server
 ```bash
 # Start FastAPI server
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 32018
 
 # Server will be available at:
-# API: http://localhost:8000
-# Docs: http://localhost:8000/docs (when DEBUG=true)
+# API: http://localhost:32018
+# Docs: http://localhost:32018/docs (when DEBUG=true)
 ```
 
 ### 7. Testing
@@ -211,14 +211,14 @@ ALLOWED_ORIGINS=https://yourdomain.com
 docker build -t finepro-backend .
 
 # Run container
-docker run -p 8000:8000 --env-file .env finepro-backend
+docker run -p 32018:8000 --env-file .env finepro-backend
 ```
 
 ### Process Management
 ```bash
 # Production server with Gunicorn
 pip install gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:32018
 ```
 
 ## Troubleshooting
@@ -244,7 +244,7 @@ gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ### Debug Mode
 ```bash
 # Enable debug logging
-DEBUG=true python -m uvicorn app.main:app --reload
+DEBUG=true python -m uvicorn app.main:app --reload --port 32018
 ```
 
 ## Architecture

@@ -14,7 +14,7 @@ _connect_args: Dict[str, Any] = {}
 _poolclass: Optional[str] = None
 
 # Handle database URL
-database_url: Union[str, URL] = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/finepro")
+database_url: Union[str, URL] = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:32019/finepro")
 if isinstance(database_url, str):
     try:
         # Try to parse as URL for proper validation

@@ -54,7 +54,6 @@ export const SignUpCard = () => {
     resolver: zodResolver(verifyOtpSchema),
     defaultValues: {
       email: "",
-      userId: "",
       secret: "",
     },
   });
@@ -66,8 +65,6 @@ export const SignUpCard = () => {
       email: "",
       password: "",
       confirmPassword: "",
-      userId: "",
-      secret: "",
     },
   });
 
@@ -99,13 +96,11 @@ export const SignUpCard = () => {
 
   const onOtpSubmit = (values: z.infer<typeof verifyOtpSchema>) => {
     verifyOtp(
-      { email: values.email, userId: values.userId || '', secret: values.secret },
+      { email: values.email, secret: values.secret },
       {
         onSuccess: () => {
           setStep("details");
           detailsForm.setValue("email", values.email);
-          detailsForm.setValue("userId", values.userId);
-          detailsForm.setValue("secret", values.secret);
         },
       }
     );

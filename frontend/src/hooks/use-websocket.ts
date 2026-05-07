@@ -39,7 +39,7 @@ export const useWebSocket = (workspaceId?: string) => {
                 if (!response.ok) throw new Error("Failed to get session");
                 const { access_token } = await response.json();
 
-                const ws = new WebSocket(`${WS_URL}/connect/${access_token}`);
+                const ws = new WebSocket(`${WS_URL}/connect`);
 
                 ws.onopen = () => {
                     console.log("WebSocket Connected");
@@ -47,6 +47,7 @@ export const useWebSocket = (workspaceId?: string) => {
 
                     // Send initialization message
                     ws.send(JSON.stringify({
+                        access_token,
                         workspace_id: workspaceId,
                         user_info: {} // Optional: add additional info if needed
                     }));

@@ -153,7 +153,7 @@ def upgrade() -> None:
                         VALUES
                             (:id, :sid, 'Migrated Tasks',
                              'Auto-created epic for fully orphaned tasks',
-                             'medium', 'todo', 0.0, NOW(), NOW())
+                             'MEDIUM', 'TODO', 0.0, NOW(), NOW())
                     """),
                     {"id": fb_epic_id, "sid": fb_space_id}
                 )

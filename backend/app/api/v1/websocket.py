@@ -40,6 +40,86 @@ class TypingRequest(BaseModel):
     room_id: str = Field(..., description="Room ID where user is typing")
     is_typing: bool = Field(..., description="Whether user is typing")
 
+async def _run_websocket_session(websocket: WebSocket, user, connect_data: dict):
+    workspace_id = connect_data.get("workspace_id")
+    user_info = connect_data.get("user_info", {})
+
+    if not workspace_id:
+        logger.warning("WebSocket connected but no workspace_id provided")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    logger.info(f"WebSocket connecting to workspace: {workspace_id}")
+
+    # Validate workspace access
+    async with AsyncSessionLocal() as db:
+        workspace_service = WorkspaceService(db)
+        has_access = await workspace_service.is_member(str(user.id), workspace_id)
+        if not has_access:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    # Connect to WebSocket manager
+    connection = await ws_manager.connect(
+        websocket,
+        str(user.id),
+        workspace_id,
+        user_info or {
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+        },
+    )
+
+    # Handle connection lifecycle
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            await handle_client_message(connection, user, data)
+
+    except WebSocketDisconnect:
+        await ws_manager.disconnect(str(user.id), workspace_id)
+    except Exception as e:
+        print(f"WebSocket error for user {user.id}: {e}")
+        await ws_manager.disconnect(str(user.id), workspace_id)
+
+
+@router.websocket("/connect")
+async def websocket_connect_with_init_message(websocket: WebSocket):
+    """WebSocket endpoint that keeps auth tokens out of browser-visible URLs."""
+    await websocket.accept()
+
+    try:
+        data = await websocket.receive_text()
+        connect_data = json.loads(data)
+        safe_connect_data = {
+            **connect_data,
+            "access_token": "REDACTED" if connect_data.get("access_token") else None,
+            "token": "REDACTED" if connect_data.get("token") else None,
+        }
+        logger.info(f"WebSocket received initial data: {safe_connect_data}")
+    except (json.JSONDecodeError, KeyError, Exception) as e:
+        logger.error(f"Failed to parse WebSocket initial data: {e}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    token = connect_data.get("access_token") or connect_data.get("token")
+    if not token:
+        logger.warning("WebSocket connected but no access token provided")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user = await get_current_user_ws(token, websocket)
+    if not user:
+        logger.warning("WebSocket auth failed")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    logger.info(f"WebSocket connection accepted for user {user.email}")
+    await _run_websocket_session(websocket, user, connect_data)
+
+
 @router.websocket("/connect/{token}")
 async def websocket_connect(websocket: WebSocket, token: str):
     with open("ws_debug.log", "a") as f:
@@ -67,55 +147,15 @@ async def websocket_connect(websocket: WebSocket, token: str):
         # Wait for connection parameters
         try:
             data = await websocket.receive_text()
-            logger.info(f"WebSocket received initial data: {data}")
             connect_data = json.loads(data)
-            workspace_id = connect_data.get("workspace_id")
-            user_info = connect_data.get("user_info", {})
+            logger.info(f"WebSocket received initial data: {connect_data}")
         except (json.JSONDecodeError, KeyError, Exception) as e:
             logger.error(f"Failed to parse WebSocket initial data: {e}")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
+
+        await _run_websocket_session(websocket, user, connect_data)
         
-        if not workspace_id:
-            logger.warning("WebSocket connected but no workspace_id provided")
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-        
-        logger.info(f"WebSocket connecting to workspace: {workspace_id}")
-        
-        # Validate workspace access
-        async with AsyncSessionLocal() as db:
-            workspace_service = WorkspaceService(db)
-            has_access = await workspace_service.is_member(str(user.id), workspace_id)
-            if not has_access:
-                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                return
-        
-        # Connect to WebSocket manager
-        connection = await ws_manager.connect(
-            websocket, 
-            str(user.id), 
-            workspace_id,
-            user_info or {
-                "name": user.name,
-                "email": user.email,
-                "role": user.role
-            }
-        )
-        
-        # Handle connection lifecycle
-        try:
-            while True:
-                # Receive message from client
-                data = await websocket.receive_text()
-                await handle_client_message(connection, user, data)
-                
-        except WebSocketDisconnect:
-            await ws_manager.disconnect(str(user.id), workspace_id)
-        except Exception as e:
-            print(f"WebSocket error for user {user.id}: {e}")
-            await ws_manager.disconnect(str(user.id), workspace_id)
-            
     except Exception as e:
         print(f"WebSocket connection error: {e}")
         try:

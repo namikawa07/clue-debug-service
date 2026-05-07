@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
 
     // Notify backend and get FastAPI tokens (for backend API access)
     try {
-      // NEXT_PUBLIC_API_URL should be the base URL, e.g., http://localhost:8000/api/v1
+      // NEXT_PUBLIC_API_URL should be the base URL, e.g., http://localhost:32018/api/v1
       // The endpoint is /auth/exchange
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:32018/api/v1'
       const exchangeUrl = `${apiUrl}/auth/exchange`
 
       console.log(`[Auth Callback] Notifying backend at: ${exchangeUrl}`);

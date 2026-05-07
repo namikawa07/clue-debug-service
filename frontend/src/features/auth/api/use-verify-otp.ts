@@ -6,13 +6,13 @@ export const useVerifyOtp = () => {
     const mutation = useMutation<
         { success: boolean },
         Error,
-        { email: string; userId: string; secret: string }
+        { email: string; secret: string }
     >({
-        mutationFn: async ({ email, userId, secret }) => {
-            const { data, error } = await supabase.auth.verifyOtp({
+        mutationFn: async ({ email, secret }) => {
+            const { error } = await supabase.auth.verifyOtp({
                 email,
                 token: secret,
-                type: "signup"
+                type: "email"
             });
 
             if (error) {
