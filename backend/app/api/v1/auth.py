@@ -43,7 +43,8 @@ async def verify_supabase_jwt(token: str) -> dict:
             "user_id": data.get("id"),
             "email": data.get("email"),
             "name": data.get("user_metadata", {}).get("full_name") or data.get("user_metadata", {}).get("name", ""),
-            "avatar_url": data.get("user_metadata", {}).get("avatar_url")
+            "avatar_url": data.get("user_metadata", {}).get("avatar_url"),
+            "has_password": data.get("user_metadata", {}).get("has_password", False),
         }
 
 
@@ -69,6 +70,12 @@ async def exchange_supabase_token(
     
     if user:
         logger.debug(f"User {user.email} found in database")
+        user.email = user_data["email"]
+        user.name = user_data["name"]
+        user.avatar_url = user_data.get("avatar_url")
+        user.has_password = user_data.get("has_password", False)
+        await db.commit()
+        await db.refresh(user)
     
     # Create user if doesn't exist
     if user is None:
@@ -79,6 +86,7 @@ async def exchange_supabase_token(
             existing_user.supabase_id = user_data["user_id"]
             existing_user.name = user_data["name"]
             existing_user.avatar_url = user_data.get("avatar_url")
+            existing_user.has_password = user_data.get("has_password", False)
             user = existing_user
             await db.commit()
             await db.refresh(user)
@@ -88,6 +96,7 @@ async def exchange_supabase_token(
                 email=user_data["email"],
                 name=user_data["name"],
                 avatar_url=user_data.get("avatar_url"),
+                has_password=user_data.get("has_password", False),
             )
             logger.info(f"Creating new user in database: {user.email}")
             db.add(user)

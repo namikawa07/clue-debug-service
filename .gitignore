@@ -40,6 +40,7 @@ pip-wheel-metadata/
 ########################
 venv/
 .venv/
+.venv*/
 env/
 .envrc
 .virtualenv/
@@ -147,6 +148,11 @@ aws-credentials.json
 *.p8
 *.p12
 *.key
+
+# Keep local Supabase project config versioned; runtime state stays ignored by supabase/.gitignore.
+!supabase/
+!supabase/.gitignore
+!supabase/config.toml
 
 #old-backend-files
 appwrite/
@@ -351,4 +357,3 @@ docs/build/
 .mypy_cache/
 .dmypy.json
 dmypy.json
-

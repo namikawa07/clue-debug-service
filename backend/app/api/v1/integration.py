@@ -9,6 +9,7 @@ from typing import Dict, Any
 
 from app.database import get_db
 from app.api.deps import get_current_user
+from app.config import settings
 from app.models.user import User
 from app.services.realtime_integration_manager import realtime_integration_manager
 
@@ -278,9 +279,10 @@ async def check_frontend_readiness(
     - Message format examples
     """
     integration_status = await realtime_integration_manager.get_integration_status()
+    websocket_endpoint = f"ws://localhost:{settings.PORT}/ws/connect/{{token}}"
     
     frontend_info = {
-        "websocket_endpoint": "ws://localhost:8000/ws/connect/{token}",
+        "websocket_endpoint": websocket_endpoint,
         "authentication": "JWT token required",
         "supported_events": [
             "task_updated",
@@ -314,7 +316,7 @@ async def check_frontend_readiness(
         "integration_examples": {
             "javascript": [
                 "// Connect to WebSocket",
-                "const ws = new WebSocket('ws://localhost:8000/ws/connect/' + token);",
+                f"const ws = new WebSocket('ws://localhost:{settings.PORT}/ws/connect/' + token);",
                 "",
                 "// Handle real-time events",
                 "ws.on('message', (event) => {",

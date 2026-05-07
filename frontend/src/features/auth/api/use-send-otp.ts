@@ -9,7 +9,13 @@ export const useSendOtp = () => {
         { email: string }
     >({
         mutationFn: async ({ email }) => {
-            const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    shouldCreateUser: true,
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
 
             if (error) {
                 throw new Error(error.message);
@@ -18,10 +24,10 @@ export const useSendOtp = () => {
             return { success: true };
         },
         onSuccess: () => {
-            toast.success("Password reset link sent to your email");
+            toast.success("Verification code sent to your email");
         },
         onError: (error) => {
-            toast.error(error.message || "Failed to send password reset link");
+            toast.error(error.message || "Failed to send verification code");
         }
     });
 

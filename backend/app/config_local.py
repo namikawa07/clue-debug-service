@@ -23,4 +23,4 @@ _connect_args: Dict[str, Any] = {}
 _poolclass: Optional[str] = None
 
 # Handle database URL
-database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/finepro")
+database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:32019/finepro")

@@ -54,11 +54,11 @@ def upgrade() -> None:
     if 'team_members' not in tables:
         op.create_table('team_members',
         sa.Column('team_id', sa.String(length=12), nullable=False),
-        sa.Column('user_id', sa.String(length=12), nullable=False),
+        sa.Column('member_id', sa.String(length=12), nullable=False),
         sa.Column('joined_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('team_id', 'user_id')
+        sa.ForeignKeyConstraint(['member_id'], ['members.id'], ),
+        sa.PrimaryKeyConstraint('team_id', 'member_id')
         )
 
     if 'space_teams' not in tables:

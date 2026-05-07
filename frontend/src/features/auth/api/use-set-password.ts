@@ -45,9 +45,9 @@ export const useSetPassword = () => {
             if (token) {
                 // Fix: Remove extra /api/v1 since NEXT_PUBLIC_API_URL might already include it
                 // Or standardise on the env var NOT having it.
-                // Assuming env var is http://localhost:8000, we need /api/v1
+                // Assuming env var is http://localhost:32018, we need /api/v1
                 // But the log showed /api/v1/api/v1, so let's check the env var or just fix the path.
-                // If log was localhost:8000/api/v1/api/v1, then NEXT_PUBLIC_API_URL is likely localhost:8000/api/v1
+                // If log was localhost:32018/api/v1/api/v1, then NEXT_PUBLIC_API_URL is likely localhost:32018/api/v1
 
                 // Let's use a safe join or just remove one /api/v1 if the env var has it.
                 // Safest fix based on the specific error:

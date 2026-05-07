@@ -44,7 +44,10 @@ class WebSocketManager {
       }
 
       // Connect to WebSocket server
-      this.socket = io(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001', {
+      const baseWsUrl = (process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:32018')
+        .replace(/\/+$/, '')
+        .replace(/\/api\/v1\/ws$/, '')
+      this.socket = io(`${baseWsUrl}/api/v1/ws`, {
         auth: {
           token: session.access_token
         }
